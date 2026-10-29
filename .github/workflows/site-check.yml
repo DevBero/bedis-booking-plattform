@@ -1,0 +1,26 @@
+# Weekly check (scripts/site-check.mjs): pages 200, /api/config and /api/slots answer, certificate valid.
+# Target: repository variable SITE_CHECK_URL (staging until launch, then the live domain). A failed run sends
+# GitHub's normal failure mail to the repository owner.
+name: Site check
+
+on:
+  schedule:
+    # Mondays 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    if: vars.SITE_CHECK_URL != ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/site-check.mjs
+        env:
+          SITE_URL: ${{ vars.SITE_CHECK_URL }}

@@ -1,0 +1,6 @@
+packages:
+  - studio
+# pnpm 11 runs no install scripts unless allowed; esbuild needs its binary for CDK bundling
+allowBuilds:
+  esbuild: true
+  unrs-resolver: false

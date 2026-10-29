@@ -1,0 +1,57 @@
+# Deploys (docs/HOSTING.md Schritt 5):
+#   push to main          -> staging
+#   Run workflow (manual) -> staging or production
+# AWS access via OIDC and the role github-deploy (infra/lib/github-stack.ts); no stored keys. Until the GitHub
+# environment has the variable AWS_DEPLOY_ROLE_ARN (TICKET.md), the job is skipped instead of failing.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+    concurrency: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+    env:
+      ENV_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+      ROLE: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+    steps:
+      - name: AWS not set up yet
+        if: env.ROLE == ''
+        run: echo "::notice::AWS_DEPLOY_ROLE_ARN is not set for this environment – deploy skipped (TICKET.md)"
+      - uses: actions/checkout@v4
+        if: env.ROLE != ''
+      - uses: pnpm/action-setup@v4
+        if: env.ROLE != ''
+      - uses: actions/setup-node@v4
+        if: env.ROLE != ''
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: env.ROLE != ''
+        run: pnpm install --frozen-lockfile
+      - if: env.ROLE != ''
+        run: pnpm typecheck && pnpm lint && pnpm test
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: env.ROLE != ''
+        with:
+          role-to-assume: ${{ env.ROLE }}
+          aws-region: eu-north-1
+      # Infrastructure first (no-op when infra/ is unchanged), then build + upload + invalidate
+      - if: env.ROLE != ''
+        run: pnpm exec cdk deploy -c env=$ENV_NAME --all --require-approval never
+      - if: env.ROLE != ''
+        run: bash scripts/deploy-site.sh $ENV_NAME
