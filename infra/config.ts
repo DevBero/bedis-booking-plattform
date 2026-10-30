@@ -25,7 +25,7 @@ export const ENVIRONMENTS = {
     sanityDataset: "production",
     // Telegram channel for booking messages (pnpm telegram:chats); empty = off. The bot token lives in SSM
     // /bedi/telegram/token, never in the repo.
-    telegramChatId: "",
+    telegramChatId: "-1004318457095",
   },
 } as const;
 
