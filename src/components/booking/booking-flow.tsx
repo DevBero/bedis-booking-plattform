@@ -132,8 +132,10 @@ export function BookingFlow() {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3 pt-8">
-        <p className="meta text-muted">{salon.name}</p>
-        <h1 className="text-display">Terminbuchung</h1>
+        <h1 className="flex flex-col gap-3">
+          <span className="meta text-muted">Herzlich willkommen zur</span>
+          <span className="text-display">Terminbuchung</span>
+        </h1>
       </header>
 
       {config.state === "loading" && <Spinner label="Leistungen werden geladen …" />}
