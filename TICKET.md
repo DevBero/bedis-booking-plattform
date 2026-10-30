@@ -18,13 +18,13 @@ Im Code schon gesetzt: Domain, Konto und Sanity-Projekt `zpfep43i` in `infra/con
 
 - [x] Dataset `production` privat
 - [x] CORS mit Credentials: `https://bedis-hairsalon.be-you.pro`, `http://localhost:3333`
-- [ ] Editor-Token anlegen (sanity.io/manage → API → Tokens, Name `lambda`, Rolle Editor) → `pnpm secret /bedi/sanity/token`
+- [x] Editor-Token anlegen (sanity.io/manage → API → Tokens, Name `lambda`, Rolle Editor) → `pnpm secret /bedi/sanity/token`
 - [x] Startinhalte (Einstellungen, 3 Leistungen)
 - [ ] Inhaber als Member einladen, DPA mit Sanity abschließen
 
 ## 3. Deploy (BD-204, BD-306)
 
-- [ ] `pnpm diff` ansehen, dann `pnpm deploy` und `pnpm deploy:site`
+- [x] `pnpm diff` ansehen, dann `pnpm deploy` und `pnpm deploy:site` (2026-10-30)
 - [ ] `https://bedis-hairsalon.be-you.pro/admin/` öffnen, einloggen, Browser-Konsole auf CSP-Fehler prüfen
 - [ ] Optional `pnpm budget` (vorher Tag `Project` als Cost allocation tag aktivieren)
 

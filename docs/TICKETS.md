@@ -21,7 +21,7 @@ Die Handarbeit in Reihenfolge steht zusätzlich in [`../TICKET.md`](../TICKET.md
 | BD-201 | Subdomain `bedis-hairsalon.be-you.pro` in der Zone be-you.pro (Konto beyou, Records per CDK) | P0 | Dev | BD-200 | ✅ | HOSTING §2 |
 | BD-202 | ACM-Zertifikat us-east-1 für `bedis-hairsalon.be-you.pro`, ARN eintragen | P0 | Du | BD-201 | ✅ | HOSTING §3 |
 | BD-203 | CDK-Stacks Site/Shared/GitHub (Code) | P0 | Dev | – | ✅ | HOSTING §4 |
-| BD-204 | `pnpm deploy` (Bootstrap im Konto schon da) | P0 | Du | BD-202, BD-301 | ⬜ | HOSTING §4 |
+| BD-204 | `pnpm deploy` (Bootstrap im Konto schon da) | P0 | Du | BD-202, BD-301 | ✅ | HOSTING §4 |
 | BD-205 | GitHub-Environments + `AWS_DEPLOY_ROLE_ARN`, `SITE_CHECK_URL` | P1 | Du | BD-204 | ⬜ | HOSTING §5 |
 | BD-206 | Deploy-, Site-Check-Workflow und Scripts (Code) | P1 | Dev | – | ✅ | HOSTING §5 |
 | BD-207 | Kostenalarm `pnpm budget` | P2 | Du | BD-200 | ⬜ | HOSTING §4 |
@@ -33,7 +33,7 @@ Die Handarbeit in Reihenfolge steht zusätzlich in [`../TICKET.md`](../TICKET.md
 | BD-301 | Sanity-Projekt (`zpfep43i`), Dataset `production` privat (2026-10-30) | P0 | Du | – | ✅ | HOSTING §6 |
 | BD-302 | Schemas, Studio-Struktur, deutsche Oberfläche, Überschneidungs-Warnung, Kalender-Tool (mit Schneidezeiten + Terminzahl je Tag) | P0 | Dev | – | ✅ | TECH §3, STUDIO |
 | BD-303 | CORS-Origins mit Credentials | P0 | Du | BD-301, BD-201 | ✅ | HOSTING §6 |
-| BD-304 | Editor-Token → SSM `/bedi/sanity/token` | P0 | Du | BD-301, BD-200 | ⬜ | HOSTING §6 |
+| BD-304 | Editor-Token → SSM `/bedi/sanity/token` | P0 | Du | BD-301, BD-200 | ✅ | HOSTING §6 |
 | BD-305 | Startinhalte `pnpm seed` (Einstellungen, Leistungen) | P1 | Du | BD-304 | ✅ | HOSTING §6 |
 | BD-306 | Studio unter `/admin` prüfen (Login, CSP in der Konsole) | P0 | Du | BD-204 | ⬜ | HOSTING §7 |
 | BD-307 | Inhaber einladen | P1 | Du | BD-301 | ⬜ | HOSTING §6 |
@@ -66,7 +66,7 @@ Die Handarbeit in Reihenfolge steht zusätzlich in [`../TICKET.md`](../TICKET.md
 | BD-604 | Branding (Logo, Farben) → Tokens | P2 | Du/Dev | BD-104 | ⬜ | DESIGN |
 | BD-605 | Sanity-DPA abschließen | P0 | Du | BD-301 | ⬜ | HOSTING §6 |
 | BD-606 | Testbuchungen (online, manuell, Überschneidung, parallel) | P0 | Du | BD-306 | ⬜ | HOSTING Checkliste |
-| BD-607 | Production-Deploy | P0 | Du | alle P0 | ⬜ | HOSTING §5 |
+| BD-607 | Production-Deploy (2026-10-30) | P0 | Du | alle P0 | ✅ | HOSTING §5 |
 | BD-608 | QR-Aufsteller drucken (`pnpm qr`) | P1 | Du | BD-201 | ⬜ | – |
 | BD-609 | Inhaber-Schulung mit `STUDIO.md` | P1 | Du | BD-607 | ⬜ | STUDIO |
 
