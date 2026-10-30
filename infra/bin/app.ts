@@ -31,6 +31,7 @@ const site = new SiteStack(app, `${STACK_PREFIX}-Site-${envName}`, {
   aliases: target.aliases,
   certificateArn: target.certificateArn,
   sanity: { projectId: SANITY_PROJECT_ID, dataset: target.sanityDataset },
+  telegramChatId: target.telegramChatId,
 });
 
 new GitHubStack(app, `${STACK_PREFIX}-GitHub`, { env, subjectPrefix: GITHUB_SUBJECT });

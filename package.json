@@ -20,7 +20,8 @@
     "seed": "node --env-file-if-exists=.env scripts/seed.mjs",
     "qr": "node scripts/qr.mjs",
     "budget": "dotenv -- bash scripts/budget.sh",
-    "site-check": "node scripts/site-check.mjs"
+    "site-check": "node scripts/site-check.mjs",
+    "telegram:chats": "dotenv -- node scripts/telegram-chats.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

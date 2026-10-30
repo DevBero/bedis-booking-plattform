@@ -4,7 +4,8 @@
 //   GET  /api/slots      free start times per day for one service
 //   GET  /api/challenge  invisible bot check (guard.ts)
 //   POST /api/book       create a booking
-// No mails and no self-service cancelling: the owner sees bookings in the Studio, customers cancel by phone.
+// No mails and no self-service cancelling: the owner sees bookings in the Studio (plus a Telegram message),
+// customers cancel by phone.
 // The same function runs daily from EventBridge and deletes old bookings and shifts (cleanup()).
 import { randomUUID } from "node:crypto";
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
@@ -12,6 +13,7 @@ import { count, DAY, issueChallenge, lockSlot, redeemChallenge, unlockSlot, vali
 import { normalizePhone } from "./phone";
 import { loadCalendar, loadConfig, mutate } from "./sanity";
 import { bookingWindow, isFree, shiftDays } from "./slots";
+import { notifyBooking } from "./telegram";
 import { DAY as DAY_MS, MINUTE, TIME_ZONE } from "./time";
 
 // Bookings per IP and day; more from one address is abuse, not a customer
@@ -129,7 +131,10 @@ async function book(ip: string, body: Record<string, unknown>) {
         },
       },
     ]);
-    await count(`booking#${src}`).catch(() => undefined);
+    await Promise.all([
+      count(`booking#${src}`).catch(() => undefined),
+      notifyBooking({ start, service: service.name, duration: service.duration, name: v.name, phone, note: v.note }),
+    ]);
 
     return json(200, {
       ok: true,

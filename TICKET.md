@@ -40,6 +40,13 @@ Im Code schon gesetzt: Domain, Konto und Sanity-Projekt `zpfep43i` in `infra/con
 - [ ] `pnpm qr` → `print/aufsteller-a6.pdf` drucken, im Salon aufstellen
 - [ ] Inhaber mit `docs/STUDIO.md` einweisen (Studio als Lesezeichen auf dem Handy)
 
+## Telegram-Benachrichtigung einschalten (BD-409) – Code ist live, aber aus
+
+- [ ] Bot bei @BotFather anlegen (`/newbot`), Token → `pnpm secret /bedi/telegram/token`
+- [ ] Bot im Channel als Administrator hinzufügen (Recht „Nachrichten senden“), dann im Channel etwas posten
+- [ ] Channel-ID an Claude geben, oder selbst: `pnpm telegram:chats` → ID (`-100…`), `pnpm telegram:chats --test <id>`
+- [ ] ID in `infra/config.ts` `telegramChatId` eintragen, `pnpm run deploy`
+
 ## Später
 
 - [ ] Optional GitHub-Deploy: Environment `production` + `AWS_DEPLOY_ROLE_ARN` (BD-205); das Repo ist **öffentlich**, ggf. auf privat stellen

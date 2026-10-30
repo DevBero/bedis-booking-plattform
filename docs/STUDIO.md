@@ -25,7 +25,7 @@ bleiben dabei bestehen.
 - Oder links **Termine** → **Heute**, **Morgen**, **Diese Woche**, **Kommende**, **Vergangene**, **Storniert**.
   Antippen zeigt Telefon und Notiz.
 
-Es gibt keine E-Mails; alle Buchungen stehen nur hier.
+Es gibt keine E-Mails. Jede Online-Buchung kommt zusätzlich als Nachricht in den Telegram-Channel des Salons.
 
 ## Kunde sagt ab (per Telefon)
 

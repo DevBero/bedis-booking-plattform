@@ -73,6 +73,16 @@ in `infra/lib/site-stack.ts` (`studioCsp`) gezielt erweitern.
 | Name | Inhalt |
 |---|---|
 | `/bedi/sanity/token` | Sanity-Editor-Token für die Lambda |
+| `/bedi/telegram/token` | Token des Telegram-Bots für Buchungs-Nachrichten |
+
+## Telegram-Benachrichtigung
+
+1. In Telegram mit **@BotFather** `/newbot` → Name und Benutzername → Token kopieren.
+2. Token speichern: `pnpm secret /bedi/telegram/token` (einfügen, Enter, Ctrl-D).
+3. Channel anlegen (oder vorhandenen nehmen) → Administratoren → den Bot hinzufügen (Recht „Nachrichten senden“).
+4. Im Channel irgendetwas posten, dann `pnpm telegram:chats` → ID des Channels (beginnt mit `-100…`).
+5. Prüfen: `pnpm telegram:chats --test <id>` → Testnachricht im Channel.
+6. ID in `infra/config.ts` (`telegramChatId`), dann `pnpm run deploy`. Leere ID = aus.
 
 ## Checkliste Launch
 
