@@ -1,6 +1,6 @@
 // Booking API behind CloudFront under /api/* (Lambda function URL with origin access control, so only the
 // distribution can call it). Contracts: docs/TECH.md §4.
-//   GET  /api/config     services, salon details, notice
+//   GET  /api/config     services, notice, booking rules
 //   GET  /api/slots      free start times per day for one service
 //   GET  /api/challenge  invisible bot check (guard.ts)
 //   POST /api/book       create a booking
@@ -50,7 +50,6 @@ async function config(params: Record<string, string | undefined>) {
   const src = params.src && SOURCES.test(params.src) ? params.src : "direct";
   await count(`visit#${src}`).catch(() => undefined);
   return json(200, {
-    salon: { ...c.salon },
     bookingEnabled: c.bookingEnabled,
     notice: c.notice,
     horizonDays: c.rules.horizonDays,

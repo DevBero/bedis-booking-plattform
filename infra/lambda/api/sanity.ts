@@ -37,7 +37,6 @@ export interface Service {
 }
 
 export interface Config {
-  salon: { name: string };
   bookingEnabled: boolean;
   notice: string | null;
   rules: Rules;
@@ -56,7 +55,6 @@ const str = (value: unknown) => (typeof value === "string" ? value : "");
 function toConfig(raw: RawConfig): Config {
   const s = raw.settings ?? {};
   return {
-    salon: { name: str(s.name) || "Salon" },
     bookingEnabled: s.bookingEnabled !== false,
     notice: str(s.notice) || null,
     rules: {

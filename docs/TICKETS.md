@@ -76,6 +76,6 @@ Die Handarbeit in Reihenfolge steht zusätzlich in [`../TICKET.md`](../TICKET.md
 
 | ID | Titel | Prio | Wer | Abh. | Status | Doku |
 |---|---|---|---|---|---|---|
-| BD-702 | Google-Unternehmensprofil: Link „Termin buchen“, `googleProfile` in `salon.ts` | P2 | Du | BD-607 | ⬜ | – |
+| BD-702 | Google-Unternehmensprofil: Link „Termin buchen“, Link auf die Buchungsseite | P2 | Du | BD-607 | ⬜ | – |
 | BD-703 | v2: mehrere Mitarbeiter (`staff`) | P2 | Dev | – | ⬜ | BRIEF |
 | BD-704 | SMS-Erinnerung | P2 | Dev | – | ⬜ | – |

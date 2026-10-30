@@ -11,7 +11,6 @@ const docs = [
   {
     _id: "settings",
     _type: "settings",
-    name: "Bedis Hairsalon",
     bookingEnabled: true,
     slotMinutes: 15,
     minNoticeHours: 2,

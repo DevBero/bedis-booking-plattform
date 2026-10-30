@@ -15,7 +15,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { errorText, getApi, postApi } from "@/lib/api";
 import { berlinDate, duration, longDay, price, time } from "@/lib/format";
 import { useFormGuard } from "@/lib/form-guard";
-import { SALON } from "@/lib/salon";
 import type { BookingResult, SalonConfig, Service, SlotsResponse } from "@/lib/types";
 import { useStepState, visitSource } from "@/lib/url-state";
 
@@ -90,8 +89,6 @@ export function BookingFlow() {
   const bookable = days.filter((d) => d.slots.length);
   const day = days.find((d) => d.date === step.tag && d.slots.length) ?? bookable[0];
 
-  const salon = config.state === "ready" ? config.data.salon : { name: SALON.name };
-
   async function book(data: CustomerData) {
     if (!service || !step.zeit) return;
     setBusy(true);
@@ -151,7 +148,6 @@ export function BookingFlow() {
       {done && config.state === "ready" && (
         <Confirmation
           booking={done.booking}
-          salon={salon}
           onRestart={() => {
             setDone(null);
             go({});

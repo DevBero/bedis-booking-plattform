@@ -13,7 +13,7 @@ Sanity über die HTTP-API (`fetch`). Infrastruktur: AWS CDK v2. CI/CD: GitHub Ac
 src/app/                 Seiten: / (Buchung), 404, robots.txt
 src/components/booking/  Buchungsablauf (booking-flow.tsx orchestriert)
 src/components/ui/       Grundbausteine (Button, Field, Notice, Spinner, Container)
-src/lib/                 API-Client, Mock-API, Bot-Schutz, Formate, .ics, URL-Zustand, Salon-Stammdaten
+src/lib/                 API-Client, Mock-API, Bot-Schutz, Formate, .ics, URL-Zustand
 studio/                  Sanity Studio (Schemas, Struktur, Kalender-Tool)
 infra/config.ts          Alles Konto-/Domain-spezifische an einer Stelle
 infra/lib/               CDK-Stacks (Site, GitHub)
@@ -25,7 +25,7 @@ scripts/                 deploy-site, set-secret, seed, qr, budget, site-check
 
 | Typ | Felder |
 |---|---|
-| `settings` (Singleton `_id: settings`) | name, bookingEnabled, notice, slotMinutes, minNoticeHours, horizonDays, bufferMinutes |
+| `settings` (Singleton `_id: settings`) | bookingEnabled, notice, slotMinutes, minNoticeHours, horizonDays, bufferMinutes |
 | `shift` („Schneidezeit“) | date (YYYY-MM-DD), from, to (`HH:MM`, Berliner Zeit) – die einzige Quelle freier Zeiten |
 | `service` | name, duration (min), price (€ brutto), priceFrom, description, order, active |
 | `booking` | service (Ref), start, end (optional → start + Dauer), customerName, phone (E.164), note, status (`confirmed`/`cancelled`/`noshow`), source (`online`/`manual`), channel (z. B. `qr`), createdAt, staff (v2) |
@@ -37,7 +37,7 @@ Zeitzone ist fest `Europe/Berlin`; gespeichert wird UTC.
 
 | Route | Antwort |
 |---|---|
-| `GET /api/config?src=qr` | `{ salon: { name }, bookingEnabled, notice, horizonDays, services[], timeZone }` – 60 s Cache in der Lambda; zählt Besuche je `src` |
+| `GET /api/config?src=qr` | `{ bookingEnabled, notice, horizonDays, services[], timeZone }` – 60 s Cache in der Lambda; zählt Besuche je `src` |
 | `GET /api/slots?service=<id>` | `{ service, duration, days: [{ date, slots: [ISO…] }] }` – nur Tage mit Schneidezeit bis zum Horizont; ausgebuchte mit leerem `slots` |
 | `GET /api/challenge` | `{ id, difficulty }` Proof-of-Work |
 | `POST /api/book` | Body `{ service, start, name, phone, note?, src?, website (Honeypot), challenge, nonce }` → `{ ok, booking }` · Fehler `400 <feld>_invalid…`, `409 slot_taken`, `409 booking_disabled`, `429 rate_limited` |
