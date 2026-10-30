@@ -1,5 +1,5 @@
-// QR code for the salon: print/qr.svg, print/qr.png and a print-ready A6 table card print/aufsteller-a6.pdf
-// (salon name, "Termin buchen", code, readable URL). Target: https://<domain>/?src=qr, so the API can count
+// QR code for the salon: print/qr.svg, print/qr.png, a print-ready A6 table card print/aufsteller-a6.pdf
+// (salon name, "Termin buchen", code, readable URL) and an A4 poster print/plakat-a4.pdf (headline + big code). Target: https://<domain>/?src=qr, so the API can count
 // bookings that come from the code. Usage: pnpm qr [url]
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
@@ -44,4 +44,26 @@ center(shortUrl, bold, 12, mm(24), accent);
 center("Leistung wählen · Uhrzeit aussuchen · fertig", regular, 8, mm(14));
 writeFileSync("print/aufsteller-a6.pdf", await pdf.save());
 
-console.log(`✓ print/qr.svg, print/qr.png, print/aufsteller-a6.pdf → ${url}`);
+// A4 portrait (210 x 297 mm): headline and a 150 mm code, centred as one block so it reads from a few metres away
+const poster = await PDFDocument.create();
+poster.setTitle(`${salon} – Friseurtermin buchen`);
+const sheet = poster.addPage([mm(210), mm(297)]);
+const posterBold = await poster.embedFont(StandardFonts.HelveticaBold);
+const headline = "Friseurtermin buchen";
+// Largest size up to 48 pt that keeps 20 mm side margins
+const headlineSize = Math.min(48, (mm(170) / posterBold.widthOfTextAtSize(headline, 1)) | 0);
+const capHeight = posterBold.heightAtSize(headlineSize, { descender: false });
+const qrSize = mm(150);
+const gap = mm(18);
+const top = (sheet.getHeight() + capHeight + gap + qrSize) / 2;
+sheet.drawText(headline, {
+  x: (sheet.getWidth() - posterBold.widthOfTextAtSize(headline, headlineSize)) / 2,
+  y: top - capHeight,
+  size: headlineSize,
+  font: posterBold,
+  color: ink,
+});
+sheet.drawImage(await poster.embedPng(png), { x: (sheet.getWidth() - qrSize) / 2, y: top - capHeight - gap - qrSize, width: qrSize, height: qrSize });
+writeFileSync("print/plakat-a4.pdf", await poster.save());
+
+console.log(`✓ print/qr.svg, print/qr.png, print/aufsteller-a6.pdf, print/plakat-a4.pdf → ${url}`);
