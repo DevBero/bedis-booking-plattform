@@ -47,9 +47,6 @@ export function errorText(error: string) {
       return "Bitte prüfe deine Telefonnummer.";
     case "name_required":
       return "Bitte gib deinen Namen an.";
-    case "email_invalid":
-    case "email_unreachable":
-      return "An diese E-Mail-Adresse kann nichts zugestellt werden. Bitte prüfen oder leer lassen.";
     case "rate_limited":
       return "Zu viele Anfragen. Bitte versuch es später noch einmal oder ruf uns an.";
     case "booking_disabled":

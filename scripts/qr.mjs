@@ -6,7 +6,7 @@ import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import QRCode from "qrcode";
 
 const config = readFileSync("infra/config.ts", "utf8");
-const domain = config.match(/ZONE_NAME = "([^"]+)"/)[1];
+const domain = config.match(/DOMAIN = "([^"]+)"/)[1];
 const salon = readFileSync("src/lib/salon.ts", "utf8").match(/name: "([^"]+)"/)[1];
 const url = process.argv[2] ?? `https://${domain}/?src=qr`;
 if (url.includes("TODO")) {

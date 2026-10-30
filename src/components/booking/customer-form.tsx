@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/field";
@@ -9,27 +8,24 @@ import { Notice } from "@/components/ui/notice";
 export interface CustomerData {
   name: string;
   phone: string;
-  email: string;
   note: string;
   website: string;
 }
 
-const EMPTY: CustomerData = { name: "", phone: "", email: "", note: "", website: "" };
+const EMPTY: CustomerData = { name: "", phone: "", note: "", website: "" };
 
-// Name and phone required, e-mail and note optional (docs/BRIEF.md). The honeypot field "website" is hidden from
+// Name and phone required, note optional (docs/BRIEF.md). The honeypot field "website" is hidden from
 // people and assistive tech; bots fill it. onFirstInput starts the invisible bot check (form-guard.ts).
 export function CustomerForm({
   busy,
   error,
   onFirstInput,
   onSubmit,
-  emailHint,
 }: {
   busy: boolean;
   error: string | null;
   onFirstInput: () => void;
   onSubmit: (data: CustomerData) => void;
-  emailHint: string;
 }) {
   const [data, setData] = useState(EMPTY);
   const [touched, setTouched] = useState(false);
@@ -60,7 +56,6 @@ export function CustomerForm({
         hint="Nur für Rückfragen zu deinem Termin."
         maxLength={40}
       />
-      <Input label="E-Mail" name="email" type="email" inputMode="email" autoComplete="email" optional value={data.email} onChange={set("email")} hint={emailHint} maxLength={200} />
       <Textarea label="Notiz" name="note" optional value={data.note} onChange={set("note")} placeholder="z. B. Wünsche oder Hinweise" maxLength={1000} />
       {/* Honeypot: off-screen, not focusable, not announced */}
       <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
@@ -71,11 +66,7 @@ export function CustomerForm({
       </div>
       {error && <Notice tone="error">{error}</Notice>}
       <p className="text-small text-muted">
-        Mit der Buchung werden deine Angaben zur Terminvergabe gespeichert. Mehr dazu in der{" "}
-        <Link href="/datenschutz/" className="text-accent underline underline-offset-2">
-          Datenschutzerklärung
-        </Link>
-        .
+        Mit der Buchung werden deine Angaben zur Terminvergabe gespeichert.
       </p>
       <Button type="submit" width="full" disabled={busy} className="min-h-14 text-lead">
         {busy ? "Wird gebucht …" : "Verbindlich buchen"}

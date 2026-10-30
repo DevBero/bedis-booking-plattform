@@ -1,3 +1,0 @@
-# Staging: locked for all search engines (see docs/HOSTING.md)
-User-agent: *
-Disallow: /

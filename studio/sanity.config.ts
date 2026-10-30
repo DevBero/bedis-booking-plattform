@@ -8,7 +8,7 @@ import { calendarTool } from "./components/CalendarTool";
 import { schemaTypes, SINGLETONS } from "./schemaTypes";
 import { structure } from "./structure";
 
-const dataset = process.env.SANITY_STUDIO_DATASET || "staging";
+const dataset = process.env.SANITY_STUDIO_DATASET || "production";
 
 export default defineConfig({
   name: "salon",

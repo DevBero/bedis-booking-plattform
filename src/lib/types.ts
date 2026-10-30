@@ -9,13 +9,11 @@ export interface Service {
 }
 
 export interface SalonConfig {
-  salon: { name: string; street: string; zip: string; city: string; phone: string };
+  salon: { name: string };
   bookingEnabled: boolean;
   notice: string | null;
   horizonDays: number;
   services: Service[];
-  // Confirmation mails to customers are on (needs SES production access)
-  customerMail: boolean;
   timeZone: string;
 }
 
@@ -33,12 +31,4 @@ export interface SlotsResponse {
 export interface BookingResult {
   ok: true;
   booking?: { id: string; service: string; duration: number; start: string; end: string; name: string };
-  confirmationMail?: boolean;
-}
-
-export interface CancelResult {
-  ok?: boolean;
-  cancelled?: boolean;
-  error?: string;
-  booking?: { service: string; start: string; status: string; phone: string; salon: string };
 }

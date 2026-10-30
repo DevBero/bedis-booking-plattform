@@ -4,36 +4,25 @@ export const PROJECT = "bedi";
 export const STACK_PREFIX = "Bedi";
 export const REGION = "eu-north-1";
 
-// TODO(BD-201): domain of the salon, hosted zone in Route 53 of the project account
-export const ZONE_NAME = "TODO-domain.de";
+// Hosted in the beyou account next to the be-you.pro website: the records go straight into its existing zone.
+// Only one environment (production); everything else in that zone belongs to other projects, so never touch it.
+export const ZONE_NAME = "be-you.pro";
+export const DOMAIN = "bedis-hairsalon.be-you.pro";
 
-// TODO(BD-301): Sanity project ID (sanity.io/manage). Datasets "staging" and "production", both private.
-export const SANITY_PROJECT_ID = "TODO";
+// Sanity project "Bedis-hairsalon" (sanity.io/manage). Only the dataset "production", private.
+export const SANITY_PROJECT_ID = "zpfep43i";
 
 // TODO(BD-204): GitHub OIDC subject in the immutable form repo:<owner>@<ownerId>/<repo>@<repoId>
 // DevBero (125164459) / bedis-booking-plattform (1438327248), read via `gh api repos/DevBero/bedis-booking-plattform`
 export const GITHUB_SUBJECT = "repo:DevBero@125164459/bedis-booking-plattform@1438327248";
 
-// Developer mail: DMARC reports and fallback inbox while Studio → Einstellungen has no address yet
-export const DEV_EMAIL = "berat.mov@gmail.com";
-
 export const ENVIRONMENTS = {
-  staging: {
-    domainName: `staging.${ZONE_NAME}`,
-    aliases: [] as string[],
-    // TODO(BD-202): ACM certificate in us-east-1 for staging.<domain>
-    certificateArn: "TODO",
-    sanityDataset: "staging",
-    // Confirmation mails to customers need SES production access (BD-701)
-    customerMail: false,
-  },
   production: {
-    domainName: ZONE_NAME,
-    aliases: [`www.${ZONE_NAME}`],
-    // TODO(BD-202): ACM certificate in us-east-1 for <domain> and www.<domain>
-    certificateArn: "TODO",
+    domainName: DOMAIN,
+    aliases: [] as string[],
+    // ACM certificate in us-east-1 for bedis-hairsalon.be-you.pro (DNS-validated, renews automatically)
+    certificateArn: "arn:aws:acm:us-east-1:945777367692:certificate/4fa8b48d-f566-4d68-b4fe-b0962b7329ec",
     sanityDataset: "production",
-    customerMail: false,
   },
 } as const;
 

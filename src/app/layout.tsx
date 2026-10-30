@@ -2,15 +2,16 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { geist } from "@/lib/fonts";
 import { SALON } from "@/lib/salon";
-import { APP_URL, NOINDEX } from "@/lib/site";
+import { APP_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
-  title: { default: `Termin buchen – ${SALON.name}`, template: `%s – ${SALON.name}` },
-  description: `Online einen Termin bei ${SALON.name} in ${SALON.city} buchen: Leistung wählen, freie Uhrzeit aussuchen, fertig.`,
+  title: { default: `Terminbuchung – ${SALON.name}`, template: `%s – ${SALON.name}` },
+  description: `Online einen Termin bei ${SALON.name} buchen: Leistung wählen, freie Uhrzeit aussuchen, fertig.`,
   alternates: { canonical: "/" },
-  robots: NOINDEX ? { index: false, follow: false } : { index: true, follow: true },
+  // Internal tool for the salon's customers (QR code), never in search engines; CloudFront adds X-Robots-Tag too
+  robots: { index: false, follow: false },
   openGraph: { type: "website", locale: "de_DE", siteName: SALON.name, url: "/" },
   formatDetection: { telephone: false },
 };

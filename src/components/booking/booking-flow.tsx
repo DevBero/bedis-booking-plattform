@@ -1,6 +1,5 @@
 "use client";
 
-import { MapPin, Phone } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ChoiceSummary } from "@/components/booking/choice-summary";
 import { Confirmation } from "@/components/booking/confirmation";
@@ -9,6 +8,7 @@ import { DateStrip } from "@/components/booking/date-strip";
 import { ServiceList } from "@/components/booking/service-list";
 import { Step } from "@/components/booking/step";
 import { TimeGrid } from "@/components/booking/time-grid";
+import { WizardProgress } from "@/components/booking/wizard-progress";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { Spinner } from "@/components/ui/spinner";
@@ -16,13 +16,15 @@ import { errorText, getApi, postApi } from "@/lib/api";
 import { berlinDate, duration, longDay, price, time } from "@/lib/format";
 import { useFormGuard } from "@/lib/form-guard";
 import { SALON } from "@/lib/salon";
-import type { BookingResult, SalonConfig, SlotsResponse } from "@/lib/types";
+import type { BookingResult, SalonConfig, Service, SlotsResponse } from "@/lib/types";
 import { useStepState, visitSource } from "@/lib/url-state";
 
 type Load<T> = { state: "loading" } | { state: "error"; error: string } | { state: "ready"; data: T };
-type Done = { booking: NonNullable<BookingResult["booking"]>; mailSent: boolean };
+type Done = { booking: NonNullable<BookingResult["booking"]> };
 
-// The whole booking: service -> day -> time -> details -> confirmation. Choices live in the URL (url-state.ts),
+const STEPS = ["Leistung", "Termin", "Angaben"];
+
+// The whole booking as a wizard, one page per step: service -> day + time -> details -> confirmation. Choices live in the URL (url-state.ts),
 // everything that changes (services, free times) comes live from the API.
 export function BookingFlow() {
   const [step, go] = useStepState();
@@ -77,13 +79,18 @@ export function BookingFlow() {
     if (config.state === "ready" && step.leistung && !service) go({}, "replace");
   }, [config.state, step.leistung, service, go]);
 
+  // Current wizard page and the side it slides in from. Derived during render (React's "previous value" pattern),
+  // so browser back/forward animate the same way as the buttons. moved: false on the first page view, so the
+  // page does not grab focus on load.
+  const page = !service ? 0 : !step.zeit ? 1 : 2;
+  const [slide, setSlide] = useState({ page, direction: "forward" as "forward" | "back", moved: false });
+  if (slide.page !== page) setSlide({ page, direction: page > slide.page ? "forward" : "back", moved: true });
+
   const days = slots.state === "ready" ? slots.data.days : [];
   const bookable = days.filter((d) => d.slots.length);
   const day = days.find((d) => d.date === step.tag && d.slots.length) ?? bookable[0];
 
-  const salon = config.state === "ready" ? config.data.salon : { name: SALON.name, street: "", zip: "", city: "", phone: "" };
-  const address = [salon.street, [salon.zip, salon.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-  const tel = salon.phone ? `tel:${salon.phone.replace(/[^\d+]/g, "")}` : null;
+  const salon = config.state === "ready" ? config.data.salon : { name: SALON.name };
 
   async function book(data: CustomerData) {
     if (!service || !step.zeit) return;
@@ -95,7 +102,6 @@ export function BookingFlow() {
       start: step.zeit,
       name: data.name,
       phone: data.phone,
-      email: data.email,
       note: data.note,
       website: data.website,
       src: visitSource(),
@@ -104,7 +110,7 @@ export function BookingFlow() {
     });
     setBusy(false);
     if (res.ok && res.data.booking) {
-      setDone({ booking: res.data.booking, mailSent: Boolean(res.data.confirmationMail) });
+      setDone({ booking: res.data.booking });
       go({}, "replace");
       window.scrollTo({ top: 0 });
       requestAnimationFrame(() => document.getElementById("done")?.focus());
@@ -123,30 +129,11 @@ export function BookingFlow() {
     setFormError(errorText(res.error));
   }
 
-  const emailHint =
-    config.state === "ready" && config.data.customerMail ? "Dann bekommst du eine Bestätigung mit Link zum Absagen." : "Nur falls wir dich per E-Mail erreichen sollen.";
-
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3 pt-8">
-        <p className="meta text-muted">Online-Terminbuchung</p>
-        <h1 className="text-display">{salon.name}</h1>
-        {(address || tel) && (
-          <div className="flex flex-col gap-1 text-small text-muted">
-            {address && (
-              <span className="inline-flex items-center gap-2">
-                <MapPin aria-hidden className="size-4 shrink-0" />
-                {address}
-              </span>
-            )}
-            {tel && (
-              <a href={tel} className="inline-flex items-center gap-2 self-start py-1 font-semibold text-accent">
-                <Phone aria-hidden className="size-4 shrink-0" />
-                {salon.phone}
-              </a>
-            )}
-          </div>
-        )}
+        <p className="meta text-muted">{salon.name}</p>
+        <h1 className="text-display">Terminbuchung</h1>
       </header>
 
       {config.state === "loading" && <Spinner label="Leistungen werden geladen …" />}
@@ -163,7 +150,6 @@ export function BookingFlow() {
         <Confirmation
           booking={done.booking}
           salon={salon}
-          mailSent={done.mailSent}
           onRestart={() => {
             setDone(null);
             go({});
@@ -176,99 +162,96 @@ export function BookingFlow() {
           {config.data.notice && <Notice>{config.data.notice}</Notice>}
 
           {!config.data.bookingEnabled || services.length === 0 ? (
-            <Notice>
-              Online-Buchung ist gerade nicht möglich.{" "}
-              {tel ? (
-                <>
-                  Ruf uns gern an:{" "}
-                  <a href={tel} className="font-semibold underline">
-                    {salon.phone}
-                  </a>
-                </>
-              ) : null}
-            </Notice>
+            <Notice>Online-Buchung ist gerade nicht möglich. Schau gern später noch mal vorbei.</Notice>
           ) : (
-            <>
-              {!service ? (
-                <Step number={1} title="Leistung wählen">
+            <div className="flex flex-col gap-6">
+              <WizardProgress steps={STEPS} current={page} />
+
+              {page === 0 && (
+                <Step key="leistung" number={1} title="Was dürfen wir machen?" direction={slide.direction} focusOnMount={slide.moved}>
                   <ServiceList services={services} onSelect={(id) => go({ leistung: id })} />
                 </Step>
-              ) : (
-                <ChoiceSummary label="Leistung" onChange={() => go({})} changeLabel="Leistung ändern">
-                  {service.name}{" "}
-                  <span className="font-normal text-muted">
-                    · {duration(service.duration)}
-                    {price(service.price, service.priceFrom) ? ` · ${price(service.price, service.priceFrom)}` : ""}
-                  </span>
-                </ChoiceSummary>
               )}
 
-              {notice && (
-                <Notice tone="error" className="-mb-2">
-                  {notice}
-                </Notice>
-              )}
-
-              {service && !step.zeit && (
-                <Step number={2} title="Tag und Uhrzeit" focusOnMount>
-                  {slots.state === "loading" && <Spinner label="Freie Zeiten werden geladen …" />}
-                  {slots.state === "error" && (
-                    <Notice tone="error">
-                      <p>{errorText(slots.error)}</p>
-                      <Button variant="ghost" className="mt-1 min-h-0 px-0" onClick={() => setSlotsVersion((v) => v + 1)}>
-                        Erneut versuchen
-                      </Button>
-                    </Notice>
-                  )}
-                  {slots.state === "ready" &&
-                    (bookable.length === 0 ? (
-                      <Notice>
-                        In den nächsten {config.data.horizonDays} Tagen ist leider nichts mehr frei.{tel ? " Ruf uns gern an, vielleicht finden wir trotzdem einen Termin." : ""}
+              {page === 1 && service && (
+                <Step key="termin" number={2} title="Wann passt es dir?" direction={slide.direction} focusOnMount onBack={() => go({})}>
+                  <div className="flex flex-col gap-6">
+                    <ServiceSummary service={service} onChange={() => go({})} />
+                    {notice && <Notice tone="error">{notice}</Notice>}
+                    {slots.state === "loading" && <Spinner label="Freie Zeiten werden geladen …" />}
+                    {slots.state === "error" && (
+                      <Notice tone="error">
+                        <p>{errorText(slots.error)}</p>
+                        <Button variant="ghost" className="mt-1 min-h-0 px-0" onClick={() => setSlotsVersion((v) => v + 1)}>
+                          Erneut versuchen
+                        </Button>
                       </Notice>
-                    ) : (
-                      <div className="flex flex-col gap-6">
-                        <DateStrip
-                          days={days}
-                          selected={day?.date}
-                          onSelect={(date) => {
-                            setNotice(null);
-                            go({ leistung: service.id, tag: date }, "replace");
-                          }}
-                        />
-                        {day && (
-                          <div>
-                            <p className="mb-4 font-semibold" aria-live="polite">
-                              {longDay(day.date)}
-                            </p>
-                            <TimeGrid
-                              slots={day.slots}
-                              onSelect={(iso) => {
-                                setNotice(null);
-                                setFormError(null);
-                                go({ leistung: service.id, tag: berlinDate(iso), zeit: iso });
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    )}
+                    {slots.state === "ready" &&
+                      (bookable.length === 0 ? (
+                        <Notice>
+                          Gerade sind keine Termine frei. Schau gern in ein paar Tagen wieder vorbei.
+                        </Notice>
+                      ) : (
+                        <>
+                          <DateStrip
+                            days={days}
+                            selected={day?.date}
+                            onSelect={(date) => {
+                              setNotice(null);
+                              go({ leistung: service.id, tag: date }, "replace");
+                            }}
+                          />
+                          {day && (
+                            <div>
+                              <p className="mb-4 font-semibold" aria-live="polite">
+                                {longDay(day.date)}
+                              </p>
+                              <TimeGrid
+                                slots={day.slots}
+                                onSelect={(iso) => {
+                                  setNotice(null);
+                                  setFormError(null);
+                                  go({ leistung: service.id, tag: berlinDate(iso), zeit: iso });
+                                }}
+                              />
+                            </div>
+                          )}
+                        </>
+                      ))}
+                  </div>
                 </Step>
               )}
 
-              {service && step.zeit && (
-                <>
-                  <ChoiceSummary label="Termin" onChange={() => go({ leistung: service.id, tag: step.tag })} changeLabel="Uhrzeit ändern">
-                    {longDay(step.zeit)}, {time(step.zeit)} Uhr
-                  </ChoiceSummary>
-                  <Step number={3} title="Deine Angaben" focusOnMount>
-                    <CustomerForm busy={busy} error={formError} onFirstInput={guard.start} onSubmit={book} emailHint={emailHint} />
-                  </Step>
-                </>
+              {page === 2 && service && step.zeit && (
+                <Step key="angaben" number={3} title="Fast geschafft" direction={slide.direction} focusOnMount onBack={() => go({ leistung: service.id, tag: step.tag })}>
+                  <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-2">
+                      <ServiceSummary service={service} onChange={() => go({})} />
+                      <ChoiceSummary label="Termin" onChange={() => go({ leistung: service.id, tag: step.tag })} changeLabel="Uhrzeit ändern">
+                        {longDay(step.zeit)}, {time(step.zeit)} Uhr
+                      </ChoiceSummary>
+                    </div>
+                    <CustomerForm busy={busy} error={formError} onFirstInput={guard.start} onSubmit={book} />
+                  </div>
+                </Step>
               )}
-            </>
+            </div>
           )}
         </>
       )}
     </div>
+  );
+}
+
+function ServiceSummary({ service, onChange }: { service: Service; onChange: () => void }) {
+  return (
+    <ChoiceSummary label="Leistung" onChange={onChange} changeLabel="Leistung ändern">
+      {service.name}{" "}
+      <span className="font-normal text-muted">
+        · {duration(service.duration)}
+        {price(service.price, service.priceFrom) ? ` · ${price(service.price, service.priceFrom)}` : ""}
+      </span>
+    </ChoiceSummary>
   );
 }

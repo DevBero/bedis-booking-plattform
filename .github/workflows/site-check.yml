@@ -1,5 +1,5 @@
 # Weekly check (scripts/site-check.mjs): pages 200, /api/config and /api/slots answer, certificate valid.
-# Target: repository variable SITE_CHECK_URL (staging until launch, then the live domain). A failed run sends
+# Target: repository variable SITE_CHECK_URL (the live domain). A failed run sends
 # GitHub's normal failure mail to the repository owner.
 name: Site check
 

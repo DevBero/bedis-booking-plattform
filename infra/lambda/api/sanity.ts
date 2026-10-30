@@ -1,8 +1,8 @@
 // Sanity Content Lake over the plain HTTP API. The dataset is private (bookings hold personal data), so every
 // call carries the Editor token from SSM; the browser never talks to Sanity directly.
 import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
-import type { Calendar, Interval, Rules, WeekHours } from "./slots";
-import { MINUTE } from "./time";
+import type { Calendar, Interval, Rules } from "./slots";
+import { berlinDate, berlinToUtc, isDate, MINUTE } from "./time";
 
 const API = `https://${process.env.SANITY_PROJECT_ID}.api.sanity.io/v2025-02-19`;
 const DATASET = process.env.SANITY_DATASET!;
@@ -51,22 +51,15 @@ export interface Service {
 }
 
 export interface Config {
-  salon: { name: string; street: string; zip: string; city: string; phone: string };
-  notifyEmail: string | null;
+  salon: { name: string };
   bookingEnabled: boolean;
   notice: string | null;
-  cancelHours: number;
   rules: Rules;
-  hours: WeekHours;
   services: Service[];
 }
 
-const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
-
 interface RawConfig {
   settings: Record<string, unknown> | null;
-  hours: Record<string, { from?: string; to?: string }[] | undefined> | null;
   services: (Omit<Service, "priceFrom"> & { priceFrom?: boolean })[];
 }
 
@@ -76,23 +69,16 @@ const str = (value: unknown) => (typeof value === "string" ? value : "");
 // Only well-formed values from the Studio count; everything else falls back to safe defaults
 function toConfig(raw: RawConfig): Config {
   const s = raw.settings ?? {};
-  const hours: WeekHours = {};
-  DAYS.forEach((day, i) => {
-    hours[i + 1] = (raw.hours?.[day] ?? []).filter((w): w is { from: string; to: string } => TIME.test(w.from ?? "") && TIME.test(w.to ?? "") && w.from! < w.to!);
-  });
   return {
-    salon: { name: str(s.name) || "Salon", street: str(s.street), zip: str(s.zip), city: str(s.city), phone: str(s.phone) },
-    notifyEmail: str(s.notifyEmail) || null,
+    salon: { name: str(s.name) || "Salon" },
     bookingEnabled: s.bookingEnabled !== false,
     notice: str(s.notice) || null,
-    cancelHours: num(s.cancelHours, 0, 168, 12),
     rules: {
       slotMinutes: [5, 10, 15, 20, 30, 60].includes(s.slotMinutes as number) ? (s.slotMinutes as number) : 15,
       minNoticeHours: num(s.minNoticeHours, 0, 336, 2),
       horizonDays: Math.round(num(s.horizonDays, 1, 180, 28)),
       bufferMinutes: num(s.bufferMinutes, 0, 120, 0),
     },
-    hours,
     services: raw.services
       .filter((x) => x.name && Number.isInteger(x.duration) && x.duration >= 5 && x.duration <= 480)
       .map((x) => ({ ...x, priceFrom: Boolean(x.priceFrom), price: typeof x.price === "number" ? x.price : null })),
@@ -101,7 +87,6 @@ function toConfig(raw: RawConfig): Config {
 
 const CONFIG_QUERY = `{
   "settings": *[_id == "settings"][0],
-  "hours": *[_id == "openingHours"][0],
   "services": *[_type == "service" && active != false] | order(order asc, name asc) {
     "id": _id, name, duration, price, priceFrom, description
   }
@@ -118,45 +103,32 @@ export async function loadConfig(): Promise<Config> {
   return config;
 }
 
-// Everything that takes time between two instants, read fresh (no cache) because it decides about free slots.
-// Bookings without an end last as long as their service.
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// Shifts and bookings between two instants, read fresh (no cache) because they decide about free slots.
+// Shifts are Berlin date + wall-clock times; bookings without an end last as long as their service.
 export async function loadCalendar(config: Config, range: Interval): Promise<Calendar> {
-  const busy = await query<{ bookings: { start: string; end?: string; duration?: number }[]; blocks: { start: string; end: string }[]; closures: { from: string; to: string }[] }>(
+  const busy = await query<{ shifts: { date?: string; from?: string; to?: string }[]; bookings: { start: string; end?: string; duration?: number }[] }>(
     `{
+      "shifts": *[_type == "shift" && date >= $fromDate && date <= $toDate]{ date, from, to },
       "bookings": *[_type == "booking" && status != "cancelled" && dateTime(start) < dateTime($to) && dateTime(start) > dateTime($from) - 60*60*24]{
         start, end, "duration": service->duration
-      },
-      "blocks": *[_type == "block" && dateTime(start) < dateTime($to) && dateTime(end) > dateTime($from)]{ start, end },
-      "closures": *[_type == "closure" && to >= $fromDate && from <= $toDate]{ from, to }
+      }
     }`,
     {
       from: new Date(range.start).toISOString(),
       to: new Date(range.end).toISOString(),
-      fromDate: new Date(range.start - 86_400_000).toISOString().slice(0, 10),
-      toDate: new Date(range.end + 86_400_000).toISOString().slice(0, 10),
+      fromDate: berlinDate(range.start),
+      toDate: berlinDate(range.end),
     },
+  );
+  const shifts = busy.shifts.flatMap((s) =>
+    isDate(s.date) && TIME.test(s.from ?? "") && TIME.test(s.to ?? "") && s.from! < s.to! ? [{ start: berlinToUtc(s.date, s.from!), end: berlinToUtc(s.date, s.to!) }] : [],
   );
   const bookings = busy.bookings.flatMap((b) => {
     const start = Date.parse(b.start);
     const end = b.end ? Date.parse(b.end) : start + (b.duration ?? 30) * MINUTE;
     return Number.isFinite(start) && Number.isFinite(end) ? [{ start, end }] : [];
   });
-  const blocks = busy.blocks.map((b) => ({ start: Date.parse(b.start), end: Date.parse(b.end) })).filter((b) => b.end > b.start);
-  return { rules: config.rules, hours: config.hours, closures: busy.closures.filter((c) => c.from && c.to), bookings, blocks };
-}
-
-export interface BookingSummary {
-  id: string;
-  start: string;
-  end: string;
-  status: string;
-  customerName: string;
-  service: string;
-}
-
-export async function findByCancelHash(hash: string) {
-  return query<BookingSummary | null>(
-    `*[_type == "booking" && cancelTokenHash == $hash][0]{ "id": _id, start, "end": coalesce(end, start), status, customerName, "service": service->name }`,
-    { hash },
-  );
+  return { rules: config.rules, shifts, bookings };
 }

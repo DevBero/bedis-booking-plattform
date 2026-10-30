@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # Builds the booking page and the Studio and uploads both to the S3 bucket of the given environment.
-# Usage: bash scripts/deploy-site.sh <staging|production>
+# Usage: bash scripts/deploy-site.sh production
 set -euo pipefail
 
 ENV_NAME="${1:-}"
-DOMAIN="$(node -e 'const s=require("fs").readFileSync("infra/config.ts","utf8");console.log(s.match(/ZONE_NAME = "([^"]+)"/)[1])')"
+DOMAIN="$(node -e 'const s=require("fs").readFileSync("infra/config.ts","utf8");console.log(s.match(/DOMAIN = "([^"]+)"/)[1])')"
 SANITY_PROJECT_ID="$(node -e 'const s=require("fs").readFileSync("infra/config.ts","utf8");console.log(s.match(/SANITY_PROJECT_ID = "([^"]+)"/)[1])')"
 case "$ENV_NAME" in
-  staging)    APP_URL="https://staging.$DOMAIN"; NOINDEX="true"; DATASET="staging" ;;
-  production) APP_URL="https://$DOMAIN";         NOINDEX="";     DATASET="production" ;;
-  *) echo "Usage: $0 <staging|production>" >&2; exit 1 ;;
+  production) APP_URL="https://$DOMAIN"; DATASET="production" ;;
+  *) echo "Usage: $0 production" >&2; exit 1 ;;
 esac
 
 STACK="Bedi-Site-$ENV_NAME"
@@ -23,9 +22,8 @@ BUCKET="$(output BucketName)"
 DISTRIBUTION_ID="$(output DistributionId)"
 echo "→ $ENV_NAME: s3://$BUCKET, CloudFront $DISTRIBUTION_ID"
 
-# Exported values win over .env files, so a local .env can never make production noindex or switch on the mock
+# Exported values win over .env files, so a local .env can never switch on the mock
 export NEXT_PUBLIC_APP_URL="$APP_URL"
-export NEXT_PUBLIC_NOINDEX="$NOINDEX"
 export NEXT_PUBLIC_API_MOCK=""
 rm -rf out studio/dist
 pnpm build
@@ -34,10 +32,6 @@ pnpm build
 SANITY_STUDIO_PROJECT_ID="$SANITY_PROJECT_ID" SANITY_STUDIO_DATASET="$DATASET" pnpm --filter bedi-studio build
 mkdir -p out/admin
 cp -R studio/dist/. out/admin/
-
-if [ "$ENV_NAME" = "staging" ]; then
-  cp scripts/staging-robots.txt out/robots.txt
-fi
 
 DEST="s3://$BUCKET"
 # Hashed files never change under the same name

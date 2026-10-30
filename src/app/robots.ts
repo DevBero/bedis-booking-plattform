@@ -1,12 +1,8 @@
 import type { MetadataRoute } from "next";
-import { NOINDEX } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-// Production: booking page indexable, Studio and API not. Staging is locked here and again by
-// scripts/deploy-site.sh, which replaces the file with Disallow: /
+// Internal tool: no crawling at all (pages also carry noindex, docs/HOSTING.md)
 export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: NOINDEX ? { userAgent: "*", disallow: "/" } : { userAgent: "*", allow: "/", disallow: ["/admin/", "/api/", "/storno/"] },
-  };
+  return { rules: { userAgent: "*", disallow: "/" } };
 }

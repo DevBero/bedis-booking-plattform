@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarPlus, CircleCheck, Phone } from "lucide-react";
+import { CalendarPlus, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { duration, longDay, time } from "@/lib/format";
 import { downloadIcs, icsFile } from "@/lib/ics";
@@ -8,8 +8,7 @@ import type { SalonConfig } from "@/lib/types";
 
 type Booking = { id: string; service: string; duration: number; start: string; end: string; name: string };
 
-export function Confirmation({ booking, salon, mailSent, onRestart }: { booking: Booking; salon: SalonConfig["salon"]; mailSent: boolean; onRestart: () => void }) {
-  const address = [salon.street, [salon.zip, salon.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+export function Confirmation({ booking, salon, onRestart }: { booking: Booking; salon: SalonConfig["salon"]; onRestart: () => void }) {
 
   function addToCalendar() {
     downloadIcs(
@@ -19,8 +18,8 @@ export function Confirmation({ booking, salon, mailSent, onRestart }: { booking:
         start: booking.start,
         end: booking.end,
         title: `${booking.service} – ${salon.name}`,
-        location: [salon.name, address].filter(Boolean).join(", "),
-        description: salon.phone ? `Absagen oder verschieben: ${salon.phone}` : "",
+        location: salon.name,
+        description: "",
         host: window.location.host,
       }),
     );
@@ -45,30 +44,13 @@ export function Confirmation({ booking, salon, mailSent, onRestart }: { booking:
         <dd className="font-semibold">
           {longDay(booking.start)}, {time(booking.start)} Uhr
         </dd>
-        {address && (
-          <>
-            <dt className="text-muted">Wo</dt>
-            <dd>
-              {salon.name}, {address}
-            </dd>
-          </>
-        )}
       </dl>
 
       <Button variant="primary" width="full" onClick={addToCalendar} icon={<CalendarPlus aria-hidden className="size-5" />}>
         Zum Kalender hinzufügen
       </Button>
 
-      <p className="text-small text-muted">
-        {mailSent ? "Eine Bestätigung mit Link zum Absagen ist unterwegs in dein Postfach. " : ""}
-        Du kannst doch nicht? Bitte sag kurz Bescheid, dann bekommt jemand anderes den Termin.
-      </p>
-      {salon.phone && (
-        <a href={`tel:${salon.phone.replace(/[^\d+]/g, "")}`} className="inline-flex min-h-touch items-center gap-2 self-start font-semibold text-accent">
-          <Phone aria-hidden className="size-4" />
-          {salon.phone}
-        </a>
-      )}
+      <p className="text-small text-muted">Falls du den Termin nicht wahrnehmen kannst, sag bitte telefonisch ab.</p>
       <Button variant="ghost" onClick={onRestart} className="self-start">
         Weiteren Termin buchen
       </Button>

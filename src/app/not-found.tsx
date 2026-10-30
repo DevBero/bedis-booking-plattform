@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SiteFooter } from "@/components/layout/site-footer";
 import { buttonStyles } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 
@@ -20,7 +19,6 @@ export default function NotFound() {
           </Link>
         </Container>
       </main>
-      <SiteFooter />
     </>
   );
 }
