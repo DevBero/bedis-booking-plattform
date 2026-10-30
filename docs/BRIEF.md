@@ -40,7 +40,7 @@ einer Stelle änderbar sind:
 
 | Thema | Annahme | Wo ändern |
 |---|---|---|
-| Salonname | „Bedis Hairsalon“ | `src/lib/salon.ts` (Seitentitel, QR-Karte), Studio → Einstellungen (Buchungsseite) |
+| Salonname | wird nirgends angezeigt (Seite, Kalendereintrag, Druck sagen nur „Terminbuchung“ / „Friseurtermin“) | – |
 | Domain | `bedis-hairsalon.be-you.pro` | `infra/config.ts` |
 | Ticket-Kürzel | `BD` | – |
 | Branding | neutral: warmes Papierweiß, Tannengrün, Geist | `src/app/globals.css` (Tokens) |

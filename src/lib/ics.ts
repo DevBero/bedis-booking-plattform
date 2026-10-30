@@ -15,7 +15,7 @@ function fold(line: string) {
   return out.join("\r\n");
 }
 
-export function icsFile(e: { id: string; start: string; end: string; title: string; location: string; description: string; host: string }) {
+export function icsFile(e: { id: string; start: string; end: string; title: string; description: string; host: string }) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -28,7 +28,6 @@ export function icsFile(e: { id: string; start: string; end: string; title: stri
     `DTSTART:${stamp(e.start)}`,
     `DTEND:${stamp(e.end)}`,
     `SUMMARY:${escape(e.title)}`,
-    `LOCATION:${escape(e.location)}`,
     `DESCRIPTION:${escape(e.description)}`,
     "BEGIN:VALARM",
     "TRIGGER:-PT2H",

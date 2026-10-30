@@ -9,7 +9,6 @@ export interface Service {
 }
 
 export interface SalonConfig {
-  salon: { name: string };
   bookingEnabled: boolean;
   notice: string | null;
   horizonDays: number;

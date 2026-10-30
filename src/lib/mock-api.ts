@@ -29,7 +29,6 @@ export async function mockFetch<T>(path: string, init: RequestInit): Promise<Api
   const url = new URL(path, "http://mock");
   if (url.pathname === "/api/config") {
     return ok({
-      salon: { name: "Bedis Hairsalon" },
       bookingEnabled: true,
       notice: "Bitte sei 5 Minuten vor deinem Termin da. (Beispieldaten)",
       horizonDays: calendar.rules.horizonDays,

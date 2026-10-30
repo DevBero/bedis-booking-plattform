@@ -4,11 +4,10 @@ import { CalendarPlus, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { duration, longDay, time } from "@/lib/format";
 import { downloadIcs, icsFile } from "@/lib/ics";
-import type { SalonConfig } from "@/lib/types";
 
 type Booking = { id: string; service: string; duration: number; start: string; end: string; name: string };
 
-export function Confirmation({ booking, salon, onRestart }: { booking: Booking; salon: SalonConfig["salon"]; onRestart: () => void }) {
+export function Confirmation({ booking, onRestart }: { booking: Booking; onRestart: () => void }) {
 
   function addToCalendar() {
     downloadIcs(
@@ -17,8 +16,7 @@ export function Confirmation({ booking, salon, onRestart }: { booking: Booking; 
         id: booking.id,
         start: booking.start,
         end: booking.end,
-        title: `${booking.service} – ${salon.name}`,
-        location: salon.name,
+        title: `Friseurtermin: ${booking.service}`,
         description: "",
         host: window.location.host,
       }),
