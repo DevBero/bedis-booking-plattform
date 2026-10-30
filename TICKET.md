@@ -16,10 +16,10 @@ Im Code schon gesetzt: Domain, Konto und Sanity-Projekt `zpfep43i` in `infra/con
 
 ## 2. Sanity – HOSTING §6
 
-- [ ] Dataset `production` auf privat stellen: `cd studio && npx sanity dataset visibility set production private`
-- [ ] CORS mit Credentials: `https://bedis-hairsalon.be-you.pro`, `http://localhost:3333`
-- [ ] Editor-Token → `pnpm secret /bedi/sanity/token`
-- [ ] `SANITY_PROJECT_ID=zpfep43i SANITY_TOKEN=… pnpm seed`
+- [x] Dataset `production` privat
+- [x] CORS mit Credentials: `https://bedis-hairsalon.be-you.pro`, `http://localhost:3333`
+- [ ] Editor-Token anlegen (sanity.io/manage → API → Tokens, Name `lambda`, Rolle Editor) → `pnpm secret /bedi/sanity/token`
+- [x] Startinhalte (Einstellungen, 3 Leistungen)
 - [ ] Inhaber als Member einladen, DPA mit Sanity abschließen
 
 ## 3. Deploy (BD-204, BD-306)

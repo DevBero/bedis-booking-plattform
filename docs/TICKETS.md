@@ -30,11 +30,11 @@ Die Handarbeit in Reihenfolge steht zusätzlich in [`../TICKET.md`](../TICKET.md
 
 | ID | Titel | Prio | Wer | Abh. | Status | Doku |
 |---|---|---|---|---|---|---|
-| BD-301 | Sanity-Projekt (`zpfep43i` ✓), Dataset `production` auf privat stellen (ist öffentlich) | P0 | Du | – | 🟨 | HOSTING §6 |
+| BD-301 | Sanity-Projekt (`zpfep43i`), Dataset `production` privat (2026-10-30) | P0 | Du | – | ✅ | HOSTING §6 |
 | BD-302 | Schemas, Studio-Struktur, deutsche Oberfläche, Überschneidungs-Warnung, Kalender-Tool (mit Schneidezeiten + Terminzahl je Tag) | P0 | Dev | – | ✅ | TECH §3, STUDIO |
-| BD-303 | CORS-Origins mit Credentials | P0 | Du | BD-301, BD-201 | ⬜ | HOSTING §6 |
+| BD-303 | CORS-Origins mit Credentials | P0 | Du | BD-301, BD-201 | ✅ | HOSTING §6 |
 | BD-304 | Editor-Token → SSM `/bedi/sanity/token` | P0 | Du | BD-301, BD-200 | ⬜ | HOSTING §6 |
-| BD-305 | Startinhalte `pnpm seed` (Einstellungen, Leistungen) | P1 | Du | BD-304 | ⬜ | HOSTING §6 |
+| BD-305 | Startinhalte `pnpm seed` (Einstellungen, Leistungen) | P1 | Du | BD-304 | ✅ | HOSTING §6 |
 | BD-306 | Studio unter `/admin` prüfen (Login, CSP in der Konsole) | P0 | Du | BD-204 | ⬜ | HOSTING §7 |
 | BD-307 | Inhaber einladen | P1 | Du | BD-301 | ⬜ | HOSTING §6 |
 
