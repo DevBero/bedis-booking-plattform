@@ -23,6 +23,9 @@ export const ENVIRONMENTS = {
     // ACM certificate in us-east-1 for bedis-hairsalon.be-you.pro (DNS-validated, renews automatically)
     certificateArn: "arn:aws:acm:us-east-1:945777367692:certificate/4fa8b48d-f566-4d68-b4fe-b0962b7329ec",
     sanityDataset: "production",
+    // Telegram channel for booking messages (pnpm telegram:chats); empty = off. The bot token lives in SSM
+    // /bedi/telegram/token, never in the repo.
+    telegramChatId: "",
   },
 } as const;
 

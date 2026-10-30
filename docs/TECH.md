@@ -17,7 +17,7 @@ src/lib/                 API-Client, Mock-API, Bot-Schutz, Formate, .ics, URL-Zu
 studio/                  Sanity Studio (Schemas, Struktur, Kalender-Tool)
 infra/config.ts          Alles Konto-/Domain-spezifische an einer Stelle
 infra/lib/               CDK-Stacks (Site, GitHub)
-infra/lambda/api/        API: index (Routen), slots + time (reine Logik, getestet), sanity, guard, phone
+infra/lambda/api/        API: index (Routen), slots + time (reine Logik, getestet), sanity, guard, phone, telegram, ssm
 scripts/                 deploy-site, set-secret, seed, qr, budget, site-check
 ```
 
@@ -43,7 +43,9 @@ Zeitzone ist fest `Europe/Berlin`; gespeichert wird UTC.
 | `POST /api/book` | Body `{ service, start, name, phone, note?, src?, website (Honeypot), challenge, nonce }` → `{ ok, booking }` · Fehler `400 <feld>_invalid…`, `409 slot_taken`, `409 booking_disabled`, `429 rate_limited` |
 | EventBridge täglich 03:00 UTC | löscht Buchungen und Schneidezeiten älter als `RETENTION_DAYS` |
 
-Keine Mails, keine Online-Absage: Der Inhaber sieht Buchungen im Studio, Kunden sagen telefonisch ab.
+Keine Mails, keine Online-Absage: Der Inhaber sieht Buchungen im Studio, Kunden sagen telefonisch ab. Jede
+Online-Buchung schickt zusätzlich eine Nachricht (Zeit, Leistung, Name, Telefon, Notiz) an einen Telegram-Channel
+(`telegram.ts`, Bot-Token in SSM, Chat-ID in `infra/config.ts`); scheitert das, bleibt die Buchung trotzdem gültig.
 
 POSTs brauchen den Header `x-amz-content-sha256` (SHA-256 des Bodys), weil CloudFront die Anfrage an die Function URL
 signiert (OAC); `src/lib/api.ts` setzt ihn.

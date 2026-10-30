@@ -38,6 +38,7 @@ interface SiteStackProps extends StackProps {
   aliases: readonly string[];
   certificateArn: string;
   sanity: { projectId: string; dataset: string };
+  telegramChatId: string;
 }
 
 // Booking page: own files only. The Next.js static export bootstraps with inline scripts; the page talks to its
@@ -157,6 +158,8 @@ function handler(event) {
         SANITY_PROJECT_ID: props.sanity.projectId,
         SANITY_DATASET: props.sanity.dataset,
         SANITY_TOKEN_PARAM: tokenParam,
+        TELEGRAM_CHAT_ID: props.telegramChatId,
+        TELEGRAM_TOKEN_PARAM: `/${PROJECT}/telegram/token`,
         RETENTION_DAYS: String(RETENTION_DAYS),
         // Salt for the IP hashes of the rate limit; not a secret, only keeps raw IPs out of the table
         IP_SALT: `${props.envName}-${account}`,

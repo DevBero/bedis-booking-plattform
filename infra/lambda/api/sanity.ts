@@ -1,29 +1,15 @@
 // Sanity Content Lake over the plain HTTP API. The dataset is private (bookings hold personal data), so every
 // call carries the Editor token from SSM; the browser never talks to Sanity directly.
-import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
 import type { Calendar, Interval, Rules } from "./slots";
+import { secret } from "./ssm";
 import { berlinDate, berlinToUtc, isDate, MINUTE } from "./time";
 
 const API = `https://${process.env.SANITY_PROJECT_ID}.api.sanity.io/v2025-02-19`;
 const DATASET = process.env.SANITY_DATASET!;
-const ssm = new SSMClient({});
-let token: Promise<string> | null = null;
-
-function getToken() {
-  token ??= ssm
-    .send(new GetParameterCommand({ Name: process.env.SANITY_TOKEN_PARAM!, WithDecryption: true }))
-    .then((r) => r.Parameter!.Value!)
-    .catch((error) => {
-      token = null;
-      throw error;
-    });
-  return token;
-}
-
 async function call<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     method: "POST",
-    headers: { authorization: `Bearer ${await getToken()}`, "content-type": "application/json" },
+    headers: { authorization: `Bearer ${await secret(process.env.SANITY_TOKEN_PARAM!)}`, "content-type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`Sanity ${path} ${res.status}: ${(await res.text()).slice(0, 300)}`);

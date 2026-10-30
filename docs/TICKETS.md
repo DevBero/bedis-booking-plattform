@@ -46,6 +46,8 @@ Die Handarbeit in Reihenfolge steht zusätzlich in [`../TICKET.md`](../TICKET.md
 | BD-402 | `/api/challenge`, Honeypot, Rate-Limit, Telefon E.164 | P0 | Dev | – | ✅ | TECH §7 |
 | BD-403 | `/api/book` mit DynamoDB-Sperre + GROQ-Prüfung | P0 | Dev | – | ✅ | TECH §6 |
 | BD-405 | Täglicher Aufräum-Job | P1 | Dev | – | ✅ | TECH §8 |
+| BD-408 | Telegram-Nachricht bei jeder Online-Buchung (Code) | P1 | Dev | – | ✅ | TECH §4 |
+| BD-409 | Telegram einschalten: Bot + Token in SSM, Bot als Admin in den Channel, Channel-ID → `infra/config.ts` `telegramChatId`, Deploy | P1 | Du | BD-408 | ⬜ | HOSTING „Telegram“ |
 
 ## Phase 5 – Buchungsseite
 
