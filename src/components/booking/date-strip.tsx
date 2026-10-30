@@ -6,7 +6,7 @@ import { dayParts, longDay } from "@/lib/format";
 import type { SlotDay } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// Horizontal row of days. Days without a free time stay visible but disabled, so closed days are obvious.
+// Horizontal row of the days with a shift. Fully booked days stay visible but disabled.
 // Arrow keys move between bookable days (radio-group pattern).
 export function DateStrip({ days, selected, onSelect }: { days: SlotDay[]; selected?: string; onSelect: (date: string) => void }) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -42,7 +42,7 @@ export function DateStrip({ days, selected, onSelect }: { days: SlotDay[]; selec
               role="radio"
               data-date={d.date}
               aria-checked={active}
-              aria-label={`${longDay(d.date)}${disabled ? ", ausgebucht oder geschlossen" : `, ${d.slots.length} freie Zeiten`}`}
+              aria-label={`${longDay(d.date)}${disabled ? ", ausgebucht" : `, ${d.slots.length} freie Zeiten`}`}
               tabIndex={active || (!selected && d === bookable[0]) ? 0 : -1}
               disabled={disabled}
               onClick={() => onSelect(d.date)}

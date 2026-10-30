@@ -10,7 +10,6 @@ import {
   UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { createHash, randomUUID } from "node:crypto";
-import { resolveMx } from "node:dns/promises";
 
 const db = new DynamoDBClient({});
 const TABLE = process.env.TABLE_NAME!;
@@ -126,28 +125,14 @@ export async function unlockSlot(start: number, end: number) {
   await Promise.all(units(start, end).map((pk) => db.send(new DeleteItemCommand({ TableName: TABLE, Key: { pk: { S: pk } } }))));
 }
 
-const EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[a-z]{2,}$/i;
-
-// False if the domain of the address cannot receive mail. DNS trouble on our side lets the address pass.
-export async function canReceiveMail(email: string) {
-  try {
-    const records = await resolveMx(email.slice(email.lastIndexOf("@") + 1));
-    return records.some((r) => r.exchange && r.exchange !== ".");
-  } catch (error) {
-    const code = (error as { code?: string }).code;
-    return !(code === "ENOTFOUND" || code === "ENODATA");
-  }
-}
-
 // Trims every field and checks required ones and lengths; returns the clean values or the first problem
-export function validate<K extends string>(body: Record<string, unknown>, rules: Record<K, { required?: boolean; max: number; email?: boolean }>) {
+export function validate<K extends string>(body: Record<string, unknown>, rules: Record<K, { required?: boolean; max: number }>) {
   const clean = {} as Record<K, string>;
-  for (const [field, rule] of Object.entries(rules) as [K, { required?: boolean; max: number; email?: boolean }][]) {
+  for (const [field, rule] of Object.entries(rules) as [K, { required?: boolean; max: number }][]) {
     const raw = body[field];
     const value = typeof raw === "string" ? raw.trim() : "";
     if (rule.required && !value) return { error: `${field}_required` } as const;
     if (value.length > rule.max) return { error: `${field}_too_long` } as const;
-    if (rule.email && value && !EMAIL.test(value)) return { error: `${field}_invalid` } as const;
     clean[field] = value;
   }
   return { values: clean } as const;

@@ -1,7 +1,7 @@
 # Salon-Terminbuchung
 
 Online-Terminbuchung für einen Friseursalon: QR-Code im Laden → Leistung wählen → freie Uhrzeit → buchen.
-Der Inhaber verwaltet Leistungen, Öffnungszeiten und Termine im Sanity Studio unter `/admin`.
+Der Inhaber trägt seine Schneidezeiten ein und sieht die Termine im Sanity Studio unter `/admin`.
 
 ```bash
 pnpm install

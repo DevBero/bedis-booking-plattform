@@ -1,5 +1,6 @@
-// "Kalender": the next days side by side, bookings and blocks per day in time order. Read-only overview; a tap
-// opens the appointment in the normal editor. Live updates through the Sanity listener.
+// "Kalender": the next days side by side, per day the shifts, how many are booked and the bookings in time order.
+// Read-only overview; a tap opens the shift or appointment in the normal editor. Live updates through the Sanity
+// listener.
 import { CalendarIcon } from "@sanity/icons/Calendar";
 import { ChevronLeftIcon } from "@sanity/icons/ChevronLeft";
 import { ChevronRightIcon } from "@sanity/icons/ChevronRight";
@@ -15,7 +16,6 @@ const HEAD = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit"
 
 interface Entry {
   _id: string;
-  _type: "booking" | "block";
   start: string;
   end: string;
   label: string;
@@ -24,16 +24,29 @@ interface Entry {
   status?: string;
 }
 
-const QUERY = `*[
-  ((_type == "booking" && status != "cancelled") || _type == "block")
-  && !(_id in path("drafts.**"))
-  && dateTime(start) >= dateTime($from) && dateTime(start) < dateTime($to)
-] | order(start asc) {
-  _id, _type, start, status, phone,
-  "end": coalesce(end, string(dateTime(start) + coalesce(service->duration, 30) * 60)),
-  "label": coalesce(customerName, reason, "Blockzeit"),
-  "service": service->name
+interface Shift {
+  _id: string;
+  date: string;
+  from: string;
+  to: string;
+}
+
+const QUERY = `{
+  "bookings": *[
+    _type == "booking" && status != "cancelled"
+    && !(_id in path("drafts.**"))
+    && dateTime(start) >= dateTime($from) && dateTime(start) < dateTime($to)
+  ] | order(start asc) {
+    _id, start, status, phone,
+    "end": coalesce(end, string(dateTime(start) + coalesce(service->duration, 30) * 60)),
+    "label": customerName,
+    "service": service->name
+  },
+  "shifts": *[_type == "shift" && !(_id in path("drafts.**")) && date >= $fromDate && date < $toDate] | order(from asc) { _id, date, from, to }
 }`;
+
+// Local date "YYYY-MM-DD"; the date field of a shift is the owner's local day
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 function startOfDay(offset: number) {
   const d = new Date();
@@ -45,18 +58,20 @@ function startOfDay(offset: number) {
 function CalendarView() {
   const client = useClient({ apiVersion: "2025-02-19" });
   const [offset, setOffset] = useState(0);
-  const [entries, setEntries] = useState<Entry[] | null>(null);
+  const [data, setData] = useState<{ bookings: Entry[]; shifts: Shift[] } | null>(null);
   const from = useMemo(() => startOfDay(offset), [offset]);
   const to = useMemo(() => new Date(from.getTime() + DAYS * DAY_MS + 2 * 60 * 60 * 1000), [from]);
 
   const load = useCallback(() => {
-    client.fetch<Entry[]>(QUERY, { from: from.toISOString(), to: to.toISOString() }).then(setEntries, () => setEntries([]));
+    client
+      .fetch<{ bookings: Entry[]; shifts: Shift[] }>(QUERY, { from: from.toISOString(), to: to.toISOString(), fromDate: ymd(from), toDate: ymd(new Date(from.getTime() + DAYS * DAY_MS)) })
+      .then(setData, () => setData({ bookings: [], shifts: [] }));
   }, [client, from, to]);
 
   useEffect(() => {
-    setEntries(null);
+    setData(null);
     load();
-    const sub = client.listen(`*[_type in ["booking", "block"]]`, {}, { visibility: "query" }).subscribe(() => load());
+    const sub = client.listen(`*[_type in ["booking", "shift"]]`, {}, { visibility: "query" }).subscribe(() => load());
     return () => sub.unsubscribe();
   }, [client, load]);
 
@@ -72,21 +87,32 @@ function CalendarView() {
         <Text size={2} weight="semibold">
           {HEAD.format(days[0])} – {HEAD.format(days[DAYS - 1])}
         </Text>
-        {entries === null && <Spinner muted />}
+        {data === null && <Spinner muted />}
       </Flex>
       <Grid gridTemplateColumns={[1, 2, 4, 7]} gap={3}>
         {days.map((day) => {
-          const list = (entries ?? []).filter((e) => sameDay(new Date(e.start), day));
+          const list = (data?.bookings ?? []).filter((e) => sameDay(new Date(e.start), day));
+          const shifts = (data?.shifts ?? []).filter((s) => s.date === ymd(day));
           const today = sameDay(day, new Date());
           return (
             <Card key={day.toISOString()} padding={3} radius={2} tone={today ? "primary" : "default"} border>
               <Stack gap={3}>
-                <Text size={1} weight="semibold">
-                  {HEAD.format(day)}
-                </Text>
-                {list.length === 0 && (
+                <Flex align="center" justify="space-between" gap={2}>
+                  <Text size={1} weight="semibold">
+                    {HEAD.format(day)}
+                  </Text>
+                  {(shifts.length > 0 || list.length > 0) && <Badge tone={list.length ? "positive" : "default"}>{list.length === 1 ? "1 Termin" : `${list.length} Termine`}</Badge>}
+                </Flex>
+                {shifts.map((s) => (
+                  <Card key={s._id} as={IntentLink} intent="edit" params={{ id: s._id, type: "shift" }} padding={2} radius={2} tone="primary" style={{ textDecoration: "none" }}>
+                    <Text size={1}>
+                      Schneidezeit {s.from}–{s.to}
+                    </Text>
+                  </Card>
+                ))}
+                {shifts.length === 0 && list.length === 0 && (
                   <Text size={1} muted>
-                    Keine Termine
+                    Keine Schneidezeit
                   </Text>
                 )}
                 {list.map((e) => (
@@ -94,10 +120,10 @@ function CalendarView() {
                     key={e._id}
                     as={IntentLink}
                     intent="edit"
-                    params={{ id: e._id, type: e._type }}
+                    params={{ id: e._id, type: "booking" }}
                     padding={2}
                     radius={2}
-                    tone={e._type === "block" ? "caution" : e.status === "noshow" ? "critical" : "positive"}
+                    tone={e.status === "noshow" ? "critical" : "positive"}
                     style={{ textDecoration: "none" }}
                   >
                     <Stack gap={2}>

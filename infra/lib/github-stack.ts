@@ -1,5 +1,5 @@
 import { CfnOutput, Stack, type StackProps } from "aws-cdk-lib";
-import { CfnOIDCProvider, Effect, PolicyStatement, Role, WebIdentityPrincipal } from "aws-cdk-lib/aws-iam";
+import { Effect, PolicyStatement, Role, WebIdentityPrincipal } from "aws-cdk-lib/aws-iam";
 import type { Construct } from "constructs";
 
 interface GitHubStackProps extends StackProps {
@@ -9,22 +9,20 @@ interface GitHubStackProps extends StackProps {
 }
 
 // OIDC trust for GitHub Actions (docs/HOSTING.md Schritt 5): the workflow gets short-lived credentials
-// for the role github-deploy, no access keys are stored in GitHub. One stack for both environments.
+// for the role bedi-github-deploy, no access keys are stored in GitHub.
 export class GitHubStack extends Stack {
   constructor(scope: Construct, id: string, props: GitHubStackProps) {
     super(scope, id, props);
     const account = Stack.of(this).account;
 
-    // L1 resource: native CloudFormation, no custom-resource Lambda
-    const provider = new CfnOIDCProvider(this, "GitHubOidc", {
-      url: "https://token.actions.githubusercontent.com",
-      clientIdList: ["sts.amazonaws.com"],
-    });
+    // The beyou account already has the GitHub OIDC provider (stack BeyouWeb-GitHub); an account allows only one
+    // per URL, so it is referenced, not created. The role name must not clash with that stack's github-deploy.
+    const providerArn = `arn:aws:iam::${account}:oidc-provider/token.actions.githubusercontent.com`;
 
     const role = new Role(this, "DeployRole", {
-      roleName: "github-deploy",
+      roleName: "bedi-github-deploy",
       description: `GitHub Actions deploys for ${props.subjectPrefix}`,
-      assumedBy: new WebIdentityPrincipal(provider.attrArn, {
+      assumedBy: new WebIdentityPrincipal(providerArn, {
         StringEquals: { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
         StringLike: { "token.actions.githubusercontent.com:sub": `${props.subjectPrefix}:*` },
       }),

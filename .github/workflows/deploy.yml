@@ -1,20 +1,11 @@
-# Deploys (docs/HOSTING.md Schritt 5):
-#   push to main          -> staging
-#   Run workflow (manual) -> staging or production
-# AWS access via OIDC and the role github-deploy (infra/lib/github-stack.ts); no stored keys. Until the GitHub
-# environment has the variable AWS_DEPLOY_ROLE_ARN (TICKET.md), the job is skipped instead of failing.
+# Deploy to production (docs/HOSTING.md Schritt 5): manual only (Actions → Deploy → Run workflow), there is no
+# staging to catch mistakes from a push. AWS access via OIDC and the role bedi-github-deploy
+# (infra/lib/github-stack.ts); no stored keys. Until the GitHub environment "production" has the variable
+# AWS_DEPLOY_ROLE_ARN (TICKET.md), the job is skipped instead of failing.
 name: Deploy
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: Target environment
-        type: choice
-        options: [staging, production]
-        default: staging
 
 permissions:
   id-token: write
@@ -23,10 +14,10 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
-    concurrency: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+    environment: production
+    concurrency: deploy-production
     env:
-      ENV_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+      ENV_NAME: production
       ROLE: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
     steps:
       - name: AWS not set up yet

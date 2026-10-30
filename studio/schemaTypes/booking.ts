@@ -12,7 +12,8 @@ const TIME = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour:
 const DAY = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "short", day: "2-digit", month: "2-digit" });
 
 // Online bookings come from POST /api/book; the owner adds phone and walk-in appointments here. Both take the
-// slot in the same way. Personal data: deleted automatically some days after the appointment (docs/TECH.md §8).
+// slot in the same way. Customers cancel by phone; the owner then sets the status to "Storniert", which frees the
+// slot again. Personal data: deleted automatically some days after the appointment (docs/TECH.md §8).
 export const booking = defineType({
   name: "booking",
   title: "Termin",
@@ -66,7 +67,6 @@ export const booking = defineType({
     }),
     defineField({ name: "customerName", title: "Name", type: "string", validation: (r) => r.required().max(120) }),
     defineField({ name: "phone", title: "Telefon", type: "string", validation: (r) => r.max(40) }),
-    defineField({ name: "email", title: "E-Mail", type: "string", validation: (r) => r.email() }),
     defineField({ name: "note", title: "Notiz", type: "text", rows: 3 }),
     defineField({
       name: "status",
@@ -86,8 +86,6 @@ export const booking = defineType({
     }),
     defineField({ name: "channel", title: "Online-Kanal", type: "string", readOnly: true, hidden: ({ document }) => document?.source !== "online", description: "z. B. qr = QR-Code im Salon" }),
     defineField({ name: "createdAt", title: "Gebucht am", type: "datetime", readOnly: true, hidden: ({ value }) => !value }),
-    // Hash of the cancellation link sent to the customer; never the token itself
-    defineField({ name: "cancelTokenHash", type: "string", hidden: true, readOnly: true }),
     // v2: several chairs. Empty in v1 so no migration is needed later.
     defineField({ name: "staff", type: "string", hidden: true }),
   ],

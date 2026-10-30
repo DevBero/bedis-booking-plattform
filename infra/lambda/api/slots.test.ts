@@ -1,18 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { daySlots, freeDays, isFree, type Calendar } from "./slots";
+import { daySlots, isFree, shiftDays, type Calendar } from "./slots";
 import { addDays, berlinDate, berlinToUtc, weekday } from "./time";
 
 const iso = (ms: number) => new Date(ms).toISOString();
-const NINE_TO_SIX = { from: "09:00", to: "18:00" };
+const shift = (date: string, from: string, to: string) => ({ start: berlinToUtc(date, from), end: berlinToUtc(date, to) });
+const local = (ms: number) => new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", timeStyle: "short" }).format(ms);
 
 function calendar(overrides: Partial<Calendar> = {}): Calendar {
   return {
     rules: { slotMinutes: 15, minNoticeHours: 0, horizonDays: 400, bufferMinutes: 0 },
-    hours: { 1: [NINE_TO_SIX], 2: [NINE_TO_SIX], 3: [NINE_TO_SIX], 4: [NINE_TO_SIX], 5: [NINE_TO_SIX], 6: [NINE_TO_SIX], 7: [NINE_TO_SIX] },
-    closures: [],
+    shifts: [shift("2026-11-02", "18:00", "22:00")],
     bookings: [],
-    blocks: [],
     ...overrides,
   };
 }
@@ -43,71 +42,76 @@ describe("time helpers", () => {
 });
 
 describe("daySlots", () => {
-  it("fills the opening hours in the raster and keeps the service inside", () => {
-    const slots = daySlots(calendar(), "2026-11-03", 30, NOW);
-    assert.equal(iso(slots[0]), "2026-11-03T08:00:00.000Z");
-    // last start 17:30 local so a 30-min service ends at 18:00
-    assert.equal(iso(slots.at(-1)!), "2026-11-03T16:30:00.000Z");
-    assert.equal(slots.length, 35);
+  it("fills a shift in the raster and keeps the service inside", () => {
+    const slots = daySlots(calendar(), "2026-11-02", 30, NOW);
+    assert.equal(local(slots[0]), "18:00");
+    // last start 21:30 so a 30-min service ends at 22:00
+    assert.equal(local(slots.at(-1)!), "21:30");
+    assert.equal(slots.length, 15);
   });
 
-  it("uses local opening times across both time changes", () => {
-    for (const date of ["2026-03-28", "2026-03-29", "2026-03-30", "2026-10-24", "2026-10-25", "2026-10-26"]) {
-      const slots = daySlots(calendar(), date, 60, NOW);
-      assert.equal(slots.length, 33, date);
+  it("offers nothing on days without a shift", () => {
+    assert.deepEqual(daySlots(calendar(), "2026-11-03", 30, NOW), []);
+  });
+
+  it("uses local shift times across the time change", () => {
+    const c = calendar({ shifts: ["2026-10-24", "2026-10-25", "2026-10-26"].map((d) => shift(d, "09:00", "12:00")) });
+    for (const date of ["2026-10-24", "2026-10-25", "2026-10-26"]) {
+      const slots = daySlots(c, date, 60, NOW);
+      assert.equal(slots.length, 9, date);
       assert.equal(slots[0], berlinToUtc(date, "09:00"), date);
-      assert.equal(slots.at(-1), berlinToUtc(date, "17:00"), date);
     }
   });
 
-  it("respects a lunch break and closed weekdays", () => {
-    const c = calendar({ hours: { 2: [{ from: "09:00", to: "12:00" }, { from: "13:00", to: "18:00" }] } });
-    const slots = daySlots(c, "2026-11-03", 45, NOW).map((s) => iso(s));
-    assert.ok(slots.includes("2026-11-03T10:15:00.000Z")); // 11:15-12:00
-    assert.ok(!slots.includes("2026-11-03T10:30:00.000Z")); // would run into the break
-    assert.ok(!slots.includes("2026-11-03T11:00:00.000Z"));
-    assert.ok(slots.includes("2026-11-03T12:00:00.000Z")); // 13:00 local
-    assert.deepEqual(daySlots(c, "2026-11-02", 45, NOW), []); // Monday not configured
+  it("combines two shifts on one day", () => {
+    const c = calendar({ shifts: [shift("2026-11-02", "10:00", "11:00"), shift("2026-11-02", "18:00", "19:00")] });
+    const slots = daySlots(c, "2026-11-02", 45, NOW).map(local);
+    assert.deepEqual(slots, ["10:00", "10:15", "18:00", "18:15"]);
   });
 
-  it("skips closures", () => {
-    const c = calendar({ closures: [{ from: "2026-12-24", to: "2026-12-26" }] });
-    assert.deepEqual(daySlots(c, "2026-12-25", 30, NOW), []);
-    assert.ok(daySlots(c, "2026-12-27", 30, NOW).length > 0);
-  });
-
-  it("keeps bookings, their buffer and blocks free", () => {
-    const booking = { start: berlinToUtc("2026-11-03", "10:00"), end: berlinToUtc("2026-11-03", "10:30") };
-    const block = { start: berlinToUtc("2026-11-03", "14:00"), end: berlinToUtc("2026-11-03", "15:00") };
-    const c = calendar({ bookings: [booking], blocks: [block], rules: { slotMinutes: 15, minNoticeHours: 0, horizonDays: 400, bufferMinutes: 15 } });
-    const local = daySlots(c, "2026-11-03", 30, NOW).map((s) => new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", timeStyle: "short" }).format(s));
-    // 09:15 + 30 + 15 buffer = 10:00 -> fits exactly; 09:30 would collide
-    assert.ok(local.includes("09:15"));
-    assert.ok(!local.includes("09:30"));
-    // booking ends 10:30, its buffer until 10:45
-    assert.ok(!local.includes("10:30"));
-    assert.ok(local.includes("10:45"));
-    // block 14:00-15:00, new service needs 30 + 15 buffer before it
-    assert.ok(local.includes("13:15"));
-    assert.ok(!local.includes("13:30"));
-    assert.ok(local.includes("15:00"));
+  it("keeps bookings and their buffer free", () => {
+    const booking = shift("2026-11-02", "19:00", "19:30");
+    const c = calendar({ bookings: [booking], rules: { slotMinutes: 15, minNoticeHours: 0, horizonDays: 400, bufferMinutes: 15 } });
+    const slots = daySlots(c, "2026-11-02", 30, NOW).map(local);
+    // 18:15 + 30 + 15 buffer = 19:00 -> fits exactly; 18:30 would collide
+    assert.ok(slots.includes("18:15"));
+    assert.ok(!slots.includes("18:30"));
+    // booking ends 19:30, its buffer until 19:45
+    assert.ok(!slots.includes("19:30"));
+    assert.ok(slots.includes("19:45"));
   });
 
   it("applies minimum notice and horizon", () => {
-    const now = berlinToUtc("2026-11-03", "10:05");
-    const c = calendar({ rules: { slotMinutes: 15, minNoticeHours: 2, horizonDays: 2, bufferMinutes: 0 } });
-    const first = daySlots(c, "2026-11-03", 30, now)[0];
-    assert.equal(first, berlinToUtc("2026-11-03", "12:15"));
-    assert.ok(daySlots(c, "2026-11-05", 30, now).length > 0);
-    assert.deepEqual(daySlots(c, "2026-11-06", 30, now), []);
+    const now = berlinToUtc("2026-11-02", "17:05");
+    const c = calendar({ rules: { slotMinutes: 15, minNoticeHours: 2, horizonDays: 2, bufferMinutes: 0 }, shifts: [shift("2026-11-02", "18:00", "22:00"), shift("2026-11-05", "18:00", "22:00")] });
+    assert.equal(local(daySlots(c, "2026-11-02", 30, now)[0]), "19:15");
+    assert.deepEqual(daySlots(c, "2026-11-05", 30, now), []);
   });
 
-  it("checks a single start and lists days", () => {
+  it("checks a single start", () => {
     const c = calendar();
-    assert.ok(isFree(c, berlinToUtc("2026-11-03", "09:15"), 30, NOW));
-    assert.ok(!isFree(c, berlinToUtc("2026-11-03", "09:10"), 30, NOW)); // off the raster
-    assert.ok(!isFree(c, berlinToUtc("2026-11-03", "17:45"), 30, NOW)); // runs past closing
-    const days = freeDays(c, "2026-10-24", 3, 30, NOW);
-    assert.deepEqual(days.map((d) => d.date), ["2026-10-24", "2026-10-25", "2026-10-26"]);
+    assert.ok(isFree(c, berlinToUtc("2026-11-02", "18:15"), 30, NOW));
+    assert.ok(!isFree(c, berlinToUtc("2026-11-02", "18:10"), 30, NOW)); // off the raster
+    assert.ok(!isFree(c, berlinToUtc("2026-11-02", "21:45"), 30, NOW)); // runs past the end of the shift
+    assert.ok(!isFree(c, berlinToUtc("2026-11-03", "18:00"), 30, NOW)); // no shift that day
+  });
+});
+
+describe("shiftDays", () => {
+  it("lists only shift days, in order, fully booked ones without slots", () => {
+    const c = calendar({
+      shifts: [shift("2026-11-09", "18:00", "19:00"), shift("2026-11-02", "18:00", "18:30"), shift("2026-11-02", "20:00", "21:00")],
+      bookings: [shift("2026-11-09", "18:00", "19:00")],
+    });
+    const days = shiftDays(c, 30, NOW);
+    assert.deepEqual(days.map((d) => d.date), ["2026-11-02", "2026-11-09"]);
+    assert.equal(days[0].slots.length, 4);
+    assert.deepEqual(days[1].slots, []);
+  });
+
+  it("drops shifts that are over or beyond the horizon", () => {
+    const now = berlinToUtc("2026-11-02", "23:00");
+    const c = calendar({ rules: { slotMinutes: 15, minNoticeHours: 0, horizonDays: 7, bufferMinutes: 0 }, shifts: [shift("2026-11-02", "18:00", "22:00"), shift("2026-11-04", "18:00", "22:00"), shift("2026-11-20", "18:00", "22:00")] });
+    assert.deepEqual(shiftDays(c, 30, now).map((d) => d.date), ["2026-11-04"]);
   });
 });

@@ -23,7 +23,13 @@ const get = async (path) => {
   return res;
 };
 
-for (const path of ["/", "/impressum/", "/datenschutz/", "/storno/", "/admin/", "/robots.txt"]) await check(`GET ${path}`, () => get(path));
+for (const path of ["/", "/admin/", "/robots.txt"]) await check(`GET ${path}`, () => get(path));
+
+await check("noindex", async () => {
+  const res = await get("/");
+  if (!res.headers.get("x-robots-tag")?.includes("noindex")) throw new Error("X-Robots-Tag fehlt");
+  if (!(await res.text()).includes("noindex")) throw new Error("meta robots fehlt");
+});
 
 let service;
 await check("GET /api/config", async () => {

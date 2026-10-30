@@ -29,7 +29,7 @@ import { AaaaRecord, ARecord, HostedZone, RecordTarget } from "aws-cdk-lib/aws-r
 import { CloudFrontTarget } from "aws-cdk-lib/aws-route53-targets";
 import { BlockPublicAccess, Bucket, BucketEncryption } from "aws-cdk-lib/aws-s3";
 import type { Construct } from "constructs";
-import { DEV_EMAIL, PROJECT, RETENTION_DAYS } from "../config";
+import { PROJECT, RETENTION_DAYS } from "../config";
 
 interface SiteStackProps extends StackProps {
   envName: string;
@@ -38,7 +38,6 @@ interface SiteStackProps extends StackProps {
   aliases: readonly string[];
   certificateArn: string;
   sanity: { projectId: string; dataset: string };
-  customerMail: boolean;
 }
 
 // Booking page: own files only. The Next.js static export bootstraps with inline scripts; the page talks to its
@@ -129,8 +128,13 @@ function handler(event) {
       frameOptions: { frameOption: HeadersFrameOption.DENY, override: true },
       referrerPolicy: { referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN, override: true },
     });
-    const siteHeaders = new ResponseHeadersPolicy(this, "SecurityHeaders", { securityHeadersBehavior: securityHeaders(SITE_CSP) });
-    const studioHeaders = new ResponseHeadersPolicy(this, "StudioHeaders", { securityHeadersBehavior: securityHeaders(studioCsp(props.sanity.projectId)) });
+    // Internal tool: nothing on this domain may show up in search engines, also not files robots.txt cannot cover
+    const noindex = { customHeaders: [{ header: "X-Robots-Tag", value: "noindex, nofollow", override: true }] };
+    const siteHeaders = new ResponseHeadersPolicy(this, "SecurityHeaders", { securityHeadersBehavior: securityHeaders(SITE_CSP), customHeadersBehavior: noindex });
+    const studioHeaders = new ResponseHeadersPolicy(this, "StudioHeaders", {
+      securityHeadersBehavior: securityHeaders(studioCsp(props.sanity.projectId)),
+      customHeadersBehavior: noindex,
+    });
 
     // Rate limits, challenges, slot locks and monthly counters (infra/lambda/api/guard.ts); everything expires
     const table = new Table(this, "ApiTable", {
@@ -149,13 +153,7 @@ function handler(event) {
       timeout: Duration.seconds(15),
       logGroup: new LogGroup(this, "ApiLogs", { retention: RetentionDays.ONE_MONTH, removalPolicy: RemovalPolicy.DESTROY }),
       environment: {
-        STAGE: props.envName,
         TABLE_NAME: table.tableName,
-        SITE_URL: `https://${props.domainName}`,
-        MAIL_FROM: `noreply@${props.zoneName}`,
-        // Used while the owner has not entered an address in Studio → Einstellungen
-        MAIL_FALLBACK_TO: DEV_EMAIL,
-        CUSTOMER_MAIL: props.customerMail ? "true" : "",
         SANITY_PROJECT_ID: props.sanity.projectId,
         SANITY_DATASET: props.sanity.dataset,
         SANITY_TOKEN_PARAM: tokenParam,
@@ -169,11 +167,9 @@ function handler(event) {
     api.addToRolePolicy(
       new PolicyStatement({ actions: ["ssm:GetParameter", "ssm:GetParameters"], resources: [`arn:aws:ssm:${region}:${account}:parameter/${PROJECT}/*`] }),
     );
-    // Sender is the domain identity; in the SES sandbox the recipient must be a verified identity as well
-    api.addToRolePolicy(new PolicyStatement({ actions: ["ses:SendEmail"], resources: [`arn:aws:ses:${region}:${account}:identity/*`] }));
     const apiUrl = api.addFunctionUrl({ authType: FunctionUrlAuthType.AWS_IAM });
 
-    // Daily cleanup of old bookings (same function, event source aws.events), 03:00 UTC
+    // Daily cleanup of old bookings and shifts (same function, event source aws.events), 03:00 UTC
     new Rule(this, "DailyCleanup", { schedule: Schedule.cron({ minute: "0", hour: "3" }), targets: [new LambdaFunction(api)] });
 
     const s3Origin = S3BucketOrigin.withOriginAccessControl(bucket);

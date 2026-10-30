@@ -1,4 +1,3 @@
-import { BlockElementIcon } from "@sanity/icons/BlockElement";
 import { CalendarIcon } from "@sanity/icons/Calendar";
 import { ClockIcon } from "@sanity/icons/Clock";
 import { CogIcon } from "@sanity/icons/Cog";
@@ -14,6 +13,12 @@ function midnight(offsetDays = 0) {
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() + offsetDays);
   return d.toISOString();
+}
+
+// Local date "YYYY-MM-DD" of today, for the date field of shifts
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 // Monday 00:00 of the next week
@@ -39,6 +44,42 @@ export const structure: StructureResolver = (S) =>
   S.list()
     .title("Salon")
     .items([
+      S.listItem()
+        .title("Schneidezeiten")
+        .id("shifts")
+        .icon(ClockIcon)
+        .child(
+          S.list()
+            .title("Schneidezeiten")
+            .items([
+              S.listItem()
+                .title("Kommende")
+                .id("shiftsUpcoming")
+                .icon(ClockIcon)
+                .child(() =>
+                  S.documentList()
+                    .title("Kommende Schneidezeiten")
+                    .schemaType("shift")
+                    .apiVersion("2025-02-19")
+                    .filter(`_type == "shift" && date >= $today`)
+                    .params({ today: today() })
+                    .defaultOrdering([{ field: "date", direction: "asc" }, { field: "from", direction: "asc" }]),
+                ),
+              S.listItem()
+                .title("Vergangene")
+                .id("shiftsPast")
+                .icon(ClockIcon)
+                .child(() =>
+                  S.documentList()
+                    .title("Vergangene Schneidezeiten")
+                    .schemaType("shift")
+                    .apiVersion("2025-02-19")
+                    .filter(`_type == "shift" && date < $today`)
+                    .params({ today: today() })
+                    .defaultOrdering([{ field: "date", direction: "desc" }]),
+                ),
+            ]),
+        ),
       S.listItem()
         .title("Termine")
         .id("bookings")
@@ -79,10 +120,7 @@ export const structure: StructureResolver = (S) =>
               S.documentTypeListItem("booking").title("Alle Termine"),
             ]),
         ),
-      S.documentTypeListItem("block").title("Blockzeiten").icon(BlockElementIcon),
       S.divider(),
       S.documentTypeListItem("service").title("Leistungen").icon(DocumentTextIcon),
-      S.listItem().title("Öffnungszeiten").id("openingHours").icon(ClockIcon).child(S.document().schemaType("openingHours").documentId("openingHours").title("Öffnungszeiten")),
-      S.documentTypeListItem("closure").title("Geschlossene Tage").icon(CalendarIcon),
       S.listItem().title("Einstellungen").id("settings").icon(CogIcon).child(S.document().schemaType("settings").documentId("settings").title("Einstellungen")),
     ]);
