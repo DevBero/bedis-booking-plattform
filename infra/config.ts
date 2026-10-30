@@ -20,8 +20,8 @@ export const ENVIRONMENTS = {
   production: {
     domainName: DOMAIN,
     aliases: [] as string[],
-    // TODO(BD-202): ACM certificate in us-east-1 for bedis-hairsalon.be-you.pro
-    certificateArn: "TODO",
+    // ACM certificate in us-east-1 for bedis-hairsalon.be-you.pro (DNS-validated, renews automatically)
+    certificateArn: "arn:aws:acm:us-east-1:945777367692:certificate/4fa8b48d-f566-4d68-b4fe-b0962b7329ec",
     sanityDataset: "production",
   },
 } as const;

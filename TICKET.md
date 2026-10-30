@@ -12,8 +12,7 @@ Im Code schon gesetzt: Domain, Konto und Sanity-Projekt `zpfep43i` in `infra/con
 ## 1. AWS (Konto beyou) – HOSTING §1–3
 
 - [ ] `! aws login --profile beyou --region eu-north-1` (Session läuft ab), `cp .env.example .env`
-- [ ] Zertifikat in **us-east-1** für `bedis-hairsalon.be-you.pro` anfordern, DNS-Validierung in der Zone
-      be-you.pro, ARN in `infra/config.ts` (`certificateArn`). Kann ich auch für dich machen.
+- [x] Zertifikat in **us-east-1** für `bedis-hairsalon.be-you.pro` (ausgestellt 2026-10-30, ARN in `infra/config.ts`)
 
 ## 2. Sanity – HOSTING §6
 

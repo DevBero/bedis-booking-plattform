@@ -19,7 +19,7 @@ Die Handarbeit in Reihenfolge steht zusätzlich in [`../TICKET.md`](../TICKET.md
 |---|---|---|---|---|---|---|
 | BD-200 | Konto beyou (geteilt), Profil `beyou`, `aws login` | P0 | Du | – | ✅ | HOSTING §1 |
 | BD-201 | Subdomain `bedis-hairsalon.be-you.pro` in der Zone be-you.pro (Konto beyou, Records per CDK) | P0 | Dev | BD-200 | ✅ | HOSTING §2 |
-| BD-202 | ACM-Zertifikat us-east-1 für `bedis-hairsalon.be-you.pro`, ARN eintragen | P0 | Du | BD-201 | ⬜ | HOSTING §3 |
+| BD-202 | ACM-Zertifikat us-east-1 für `bedis-hairsalon.be-you.pro`, ARN eintragen | P0 | Du | BD-201 | ✅ | HOSTING §3 |
 | BD-203 | CDK-Stacks Site/Shared/GitHub (Code) | P0 | Dev | – | ✅ | HOSTING §4 |
 | BD-204 | `pnpm deploy` (Bootstrap im Konto schon da) | P0 | Du | BD-202, BD-301 | ⬜ | HOSTING §4 |
 | BD-205 | GitHub-Environments + `AWS_DEPLOY_ROLE_ARN`, `SITE_CHECK_URL` | P1 | Du | BD-204 | ⬜ | HOSTING §5 |
